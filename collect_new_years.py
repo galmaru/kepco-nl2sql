@@ -129,15 +129,20 @@ def collect_once_by_metro(name, endpoint):
 
 
 def collect_contract():
-    """전자입찰계약 - 분기별"""
+    """전자입찰계약 - 월별 (API 90일 제한으로 Q3·Q4 분기 조회 불가)"""
     url = f"{BASE_URL}/electContract.do"
-    periods = [
-        ("20240101", "20240331"), ("20240401", "20240630"),
-        ("20240701", "20240930"), ("20241001", "20241231"),
-        ("20250101", "20250331"), ("20250401", "20250630"),
-        ("20250701", "20250930"), ("20251001", "20251231"),
-        ("20260101", "20260331"),
-    ]
+    # 월별로 수집: 31일짜리 달도 90일 이하 → 전 구간 안전
+    import calendar
+    periods = []
+    for year in ["2024", "2025"]:
+        for m in range(1, 13):
+            last_day = calendar.monthrange(int(year), m)[1]
+            start = f"{year}{m:02d}01"
+            end   = f"{year}{m:02d}{last_day:02d}"
+            periods.append((start, end))
+    # 2026년 1월
+    periods.append(("20260101", "20260131"))
+
     total = 0
     for start, end in periods:
         result = fetch(url, {"noticeBeginDate": start, "noticeEndDate": end})
