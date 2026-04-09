@@ -35,6 +35,7 @@ def create_tables(conn: sqlite3.Connection):
     # 1. 청구서 유형별 발송 현황 (billing_type)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS billing_type (
+            -- 청구서 유형별(모바일, 우편 등) 발송 건수 통계 테이블
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             year        TEXT NOT NULL,       -- 연도 (e.g. '2022')
             month       TEXT NOT NULL,       -- 월 (e.g. '01')
@@ -48,6 +49,7 @@ def create_tables(conn: sqlite3.Connection):
     # 2. 업종별 전력사용 현황 - 업종 대분류 (business_type)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS business_type (
+            -- 상세 업종별(반도체, 자동차 등) 전력 사용량 및 계약전력 통계 테이블
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             year            TEXT NOT NULL,   -- 연도
             month           TEXT NOT NULL,   -- 월
@@ -63,6 +65,7 @@ def create_tables(conn: sqlite3.Connection):
     # 3. 입찰/계약 공고 (contract)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS contract (
+            -- 한전 전자입찰계약 정보 및 공고 현황 테이블
             id                              INTEGER PRIMARY KEY AUTOINCREMENT,
             year                            TEXT,    -- 공고 연도 (noticeDate에서 파싱)
             month                           TEXT,    -- 공고 월
@@ -92,6 +95,7 @@ def create_tables(conn: sqlite3.Connection):
     # 4. 계약종별 전력사용 현황 (contract_type)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS contract_type (
+            -- 전기 공급 계약종별(주택용, 산업용 등) 사용량 및 요금 통계 테이블
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             year            TEXT NOT NULL,   -- 연도
             month           TEXT NOT NULL,   -- 월
@@ -109,6 +113,7 @@ def create_tables(conn: sqlite3.Connection):
     # 5. 산업별 고객 변동 현황 (industry_cust_change)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS industry_cust_change (
+            -- 산업별 신규, 증설, 해지 등 고객 변동 현황 테이블
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             year            TEXT NOT NULL,   -- 연도
             month           TEXT NOT NULL,   -- 월
@@ -124,6 +129,7 @@ def create_tables(conn: sqlite3.Connection):
     # 6. 업종별 전력사용 현황 - 산업 대분류 (industry_type)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS industry_type (
+            -- 한국표준산업분류(KSIC) 기반 대분류별 전력 사용량 및 요금 통계 테이블
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             year        TEXT NOT NULL,   -- 연도
             month       TEXT NOT NULL,   -- 월
@@ -140,6 +146,7 @@ def create_tables(conn: sqlite3.Connection):
     # 7. 분산형 자원 현황 (dispersed_gen)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS dispersed_gen (
+            -- 변전소 및 배전선로별 분산형 전원 연계 정보 테이블
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             subst_code      TEXT,    -- 변전소 코드
             subst_name      TEXT,    -- 변전소명
@@ -161,6 +168,7 @@ def create_tables(conn: sqlite3.Connection):
     # 8. EV 충전소 현황 (ev_charge)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS ev_charge (
+            -- 지역별 전기차 충전소 위치 및 충전기 설치 수 현황 테이블
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             metro           TEXT,    -- 광역시도명
             city            TEXT,    -- 시군구명
@@ -175,6 +183,7 @@ def create_tables(conn: sqlite3.Connection):
     # 9. EV 충전기 운영 현황 (ev_charge_manage)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS ev_charge_manage (
+            -- 전기차 충전기별 실시간 상태 및 운영 정보 테이블
             id                  INTEGER PRIMARY KEY AUTOINCREMENT,
             metro               TEXT,    -- 광역시도명 (파일명에서 파싱)
             station_id          TEXT,    -- 충전소 ID
@@ -194,6 +203,7 @@ def create_tables(conn: sqlite3.Connection):
     # 10. 가구당 평균 전력사용량 (house_avg)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS house_avg (
+            -- 지역별 가구수 대비 평균 전력 사용량 및 요금 통계 테이블
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             year        TEXT NOT NULL,   -- 연도
             month       TEXT NOT NULL,   -- 월
@@ -208,6 +218,7 @@ def create_tables(conn: sqlite3.Connection):
     # 11. 신재생에너지 현황 (renew_energy)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS renew_energy (
+            -- 발전원별(태양광, 풍력 등) 신재생에너지 설치소 및 용량 통계 테이블
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             year            TEXT,    -- 기준 연도 (파일명에서 파싱)
             gen_source      TEXT,    -- 발전원 (태양광/풍력/소수력 등)
@@ -223,6 +234,7 @@ def create_tables(conn: sqlite3.Connection):
     # 12. 복지 할인 현황 (welfare_discount)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS welfare_discount (
+            -- 복지 유형별(기초수급자, 장애인 등) 전기요금 할인 혜택 수혜자 현황 테이블
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             year            TEXT NOT NULL,   -- 연도
             month           TEXT NOT NULL,   -- 월
@@ -236,6 +248,7 @@ def create_tables(conn: sqlite3.Connection):
     # 13. 공통 코드 (common_code)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS common_code (
+            -- API 및 시스템에서 사용하는 각종 코드(지역, 계약종 등) 매핑 테이블
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             code_type       TEXT NOT NULL,   -- 코드 유형 (metroCd/cityCd/cntrCd 등)
             upper_code      TEXT,            -- 상위 코드
