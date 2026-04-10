@@ -36,7 +36,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS billing_type (
             -- 청구서 유형별(모바일, 우편 등) 발송 건수 통계 테이블
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
             year        TEXT NOT NULL,       -- 연도 (e.g. '2022')
             month       TEXT NOT NULL,       -- 월 (e.g. '01')
             metro       TEXT NOT NULL,       -- 광역시도명
@@ -50,7 +49,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS business_type (
             -- 상세 업종별(반도체, 자동차 등) 전력 사용량 및 계약전력 통계 테이블
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
             year            TEXT NOT NULL,   -- 연도
             month           TEXT NOT NULL,   -- 월
             metro           TEXT NOT NULL,   -- 광역시도명
@@ -66,7 +64,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS contract (
             -- 한전 전자입찰계약 정보 및 공고 현황 테이블
-            id                              INTEGER PRIMARY KEY AUTOINCREMENT,
             year                            TEXT,    -- 공고 연도 (noticeDate에서 파싱)
             month                           TEXT,    -- 공고 월
             purchase_type                   TEXT,    -- 구매 유형 (ConstructionService/Product 등)
@@ -96,7 +93,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS contract_type (
             -- 전기 공급 계약종별(주택용, 산업용 등) 사용량 및 요금 통계 테이블
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
             year            TEXT NOT NULL,   -- 연도
             month           TEXT NOT NULL,   -- 월
             metro           TEXT NOT NULL,   -- 광역시도명
@@ -114,7 +110,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS industry_cust_change (
             -- 산업별 신규, 증설, 해지 등 고객 변동 현황 테이블
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
             year            TEXT NOT NULL,   -- 연도
             month           TEXT NOT NULL,   -- 월
             metro           TEXT NOT NULL,   -- 광역시도명
@@ -130,7 +125,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS industry_type (
             -- 한국표준산업분류(KSIC) 기반 대분류별 전력 사용량 및 요금 통계 테이블
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
             year        TEXT NOT NULL,   -- 연도
             month       TEXT NOT NULL,   -- 월
             metro       TEXT NOT NULL,   -- 광역시도명
@@ -147,7 +141,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS dispersed_gen (
             -- 변전소 및 배전선로별 분산형 전원 연계 정보 테이블
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
             subst_code      TEXT,    -- 변전소 코드
             subst_name      TEXT,    -- 변전소명
             js_subst_power  REAL,    -- 주상 변전소 전력
@@ -169,7 +162,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS ev_charge (
             -- 지역별 전기차 충전소 위치 및 충전기 설치 수 현황 테이블
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
             metro           TEXT,    -- 광역시도명
             city            TEXT,    -- 시군구명
             station_place   TEXT,    -- 충전소 명칭
@@ -184,7 +176,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS ev_charge_manage (
             -- 전기차 충전기별 실시간 상태 및 운영 정보 테이블
-            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
             metro               TEXT,    -- 광역시도명 (파일명에서 파싱)
             station_id          TEXT,    -- 충전소 ID
             station_name        TEXT,    -- 충전소명
@@ -204,7 +195,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS house_avg (
             -- 지역별 가구수 대비 평균 전력 사용량 및 요금 통계 테이블
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
             year        TEXT NOT NULL,   -- 연도
             month       TEXT NOT NULL,   -- 월
             metro       TEXT NOT NULL,   -- 광역시도명
@@ -219,7 +209,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS renew_energy (
             -- 발전원별(태양광, 풍력 등) 신재생에너지 설치소 및 용량 통계 테이블
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
             year            TEXT,    -- 기준 연도 (파일명에서 파싱)
             gen_source      TEXT,    -- 발전원 (태양광/풍력/소수력 등)
             metro           TEXT,    -- 광역시도명
@@ -235,7 +224,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS welfare_discount (
             -- 복지 유형별(기초수급자, 장애인 등) 전기요금 할인 혜택 수혜자 현황 테이블
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
             year            TEXT NOT NULL,   -- 연도
             month           TEXT NOT NULL,   -- 월
             metro           TEXT NOT NULL,   -- 광역시도명
@@ -249,7 +237,6 @@ def create_tables(conn: sqlite3.Connection):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS common_code (
             -- API 및 시스템에서 사용하는 각종 코드(지역, 계약종 등) 매핑 테이블
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
             code_type       TEXT NOT NULL,   -- 코드 유형 (metroCd/cityCd/cntrCd 등)
             upper_code      TEXT,            -- 상위 코드
             upper_code_name TEXT,            -- 상위 코드명
