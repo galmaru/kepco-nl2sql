@@ -1,0 +1,1588 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BIRD Dev Schema Overview</title>
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --panel: #ffffff;
+      --ink: #18202a;
+      --muted: #667085;
+      --line: #d7d7d0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      padding: 28px 36px 18px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+    h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: 0; }
+    h2 { margin: 0; font-size: 18px; letter-spacing: 0; }
+    h3 { margin: 0 0 14px; font-size: 16px; letter-spacing: 0; }
+    p { margin: 8px 0 0; color: var(--muted); line-height: 1.45; }
+    main { padding: 24px 36px 40px; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .summary div, .panel, .db-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .summary div { padding: 16px; }
+    strong { display: block; font-size: 24px; }
+    small { color: var(--muted); }
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .panel { padding: 16px; min-width: 0; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: minmax(130px, 1fr) 1.2fr;
+      gap: 10px;
+      align-items: center;
+      margin: 8px 0;
+      font-size: 12px;
+    }
+    .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { height: 10px; background: #ececea; border-radius: 999px; overflow: hidden; }
+    .bar { height: 10px; border-radius: 999px; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .db-card { padding: 16px; min-height: 188px; }
+    .card-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+    .card-head span { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+    .metric-grid div { background: #f4f4f1; border-radius: 6px; padding: 10px; }
+    .metric-grid strong { font-size: 17px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; font-size: 12px; background: #fff; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
+    th { background: #eeeeea; font-size: 12px; color: #3f4652; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    @media (max-width: 900px) {
+      header, main { padding-left: 18px; padding-right: 18px; }
+      .summary, .charts { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BIRD Dev Schema Overview</h1>
+    <p>DB와 테이블의 성격, 규모, 실제 샘플 값을 한 화면에서 훑기 위한 요약입니다.</p>
+  </header>
+  <main>
+    <section class="summary">
+      <div><strong>69</strong><small>databases</small></div>
+      <div><strong>522</strong><small>tables</small></div>
+      <div><strong>3539</strong><small>columns</small></div>
+      <div><strong>9428</strong><small>dev questions</small></div>
+    </section>
+    <section class="charts">
+      <div class="panel"><h3>Tables by DB</h3><div class="bar-row"><div class="bar-label">european_football_1 · 2</div><div class="bar-track"><div class="bar" style="width:3.08%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">sales_in_weather · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">craftbeer · 2</div><div class="bar-track"><div class="bar" style="width:3.08%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">soccer_2016 · 21</div><div class="bar-track"><div class="bar" style="width:32.31%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">restaurant · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">movie · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">olympics · 11</div><div class="bar-track"><div class="bar" style="width:16.92%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">language_corpus · 6</div><div class="bar-track"><div class="bar" style="width:9.23%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">app_store · 2</div><div class="bar-track"><div class="bar" style="width:3.08%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">sales · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">video_games · 8</div><div class="bar-track"><div class="bar" style="width:12.31%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">image_and_language · 6</div><div class="bar-track"><div class="bar" style="width:9.23%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">software_company · 5</div><div class="bar-track"><div class="bar" style="width:7.69%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">authors · 5</div><div class="bar-track"><div class="bar" style="width:7.69%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">movies_4 · 17</div><div class="bar-track"><div class="bar" style="width:26.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">social_media · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">human_resources · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">regional_sales · 6</div><div class="bar-track"><div class="bar" style="width:9.23%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">computer_student · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">works_cycles · 65</div><div class="bar-track"><div class="bar" style="width:100.00%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">food_inspection_2 · 5</div><div class="bar-track"><div class="bar" style="width:7.69%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">citeseer · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">bike_share_1 · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">law_episode · 6</div><div class="bar-track"><div class="bar" style="width:9.23%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">cs_semester · 5</div><div class="bar-track"><div class="bar" style="width:7.69%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">legislator · 5</div><div class="bar-track"><div class="bar" style="width:7.69%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">world · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">cookbook · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">university · 6</div><div class="bar-track"><div class="bar" style="width:9.23%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">books · 15</div><div class="bar-track"><div class="bar" style="width:23.08%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">shipping · 5</div><div class="bar-track"><div class="bar" style="width:7.69%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">food_inspection · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">movie_platform · 5</div><div class="bar-track"><div class="bar" style="width:7.69%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">shakespeare · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">book_publishing_company · 11</div><div class="bar-track"><div class="bar" style="width:16.92%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">car_retails · 8</div><div class="bar-track"><div class="bar" style="width:12.31%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">mental_health_survey · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">hockey · 22</div><div class="bar-track"><div class="bar" style="width:33.85%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">music_platform_2 · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">address · 9</div><div class="bar-track"><div class="bar" style="width:13.85%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">menu · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">professional_basketball · 9</div><div class="bar-track"><div class="bar" style="width:13.85%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">cars · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">synthea · 11</div><div class="bar-track"><div class="bar" style="width:16.92%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">genes · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">retails · 8</div><div class="bar-track"><div class="bar" style="width:12.31%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">talkingdata · 12</div><div class="bar-track"><div class="bar" style="width:18.46%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">beer_factory · 7</div><div class="bar-track"><div class="bar" style="width:10.77%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">chicago_crime · 7</div><div class="bar-track"><div class="bar" style="width:10.77%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">mondial_geo · 34</div><div class="bar-track"><div class="bar" style="width:52.31%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">student_loan · 10</div><div class="bar-track"><div class="bar" style="width:15.38%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">codebase_comments · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">retail_world · 8</div><div class="bar-track"><div class="bar" style="width:12.31%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">music_tracker · 2</div><div class="bar-track"><div class="bar" style="width:3.08%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">disney · 5</div><div class="bar-track"><div class="bar" style="width:7.69%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">college_completion · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">ice_hockey_draft · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">world_development_indicators · 6</div><div class="bar-track"><div class="bar" style="width:9.23%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">airline · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">retail_complains · 6</div><div class="bar-track"><div class="bar" style="width:9.23%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">trains · 2</div><div class="bar-track"><div class="bar" style="width:3.08%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">public_review_platform · 15</div><div class="bar-track"><div class="bar" style="width:23.08%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">donor · 4</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">coinmarketcap · 2</div><div class="bar-track"><div class="bar" style="width:3.08%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">simpson_episodes · 7</div><div class="bar-track"><div class="bar" style="width:10.77%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">movie_3 · 16</div><div class="bar-track"><div class="bar" style="width:24.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">shooting · 3</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">superstore · 6</div><div class="bar-track"><div class="bar" style="width:9.23%;background:#2563eb"></div></div></div>
+<div class="bar-row"><div class="bar-label">movielens · 7</div><div class="bar-track"><div class="bar" style="width:10.77%;background:#2563eb"></div></div></div></div>
+      <div class="panel"><h3>Columns by DB</h3><div class="bar-row"><div class="bar-label">european_football_1 · 11</div><div class="bar-track"><div class="bar" style="width:2.42%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">sales_in_weather · 26</div><div class="bar-track"><div class="bar" style="width:5.71%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">craftbeer · 11</div><div class="bar-track"><div class="bar" style="width:2.42%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">soccer_2016 · 85</div><div class="bar-track"><div class="bar" style="width:18.68%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">restaurant · 12</div><div class="bar-track"><div class="bar" style="width:2.64%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">movie · 27</div><div class="bar-track"><div class="bar" style="width:5.93%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">olympics · 32</div><div class="bar-track"><div class="bar" style="width:7.03%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">language_corpus · 24</div><div class="bar-track"><div class="bar" style="width:5.27%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">app_store · 15</div><div class="bar-track"><div class="bar" style="width:3.30%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">sales · 16</div><div class="bar-track"><div class="bar" style="width:3.52%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">video_games · 21</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">image_and_language · 20</div><div class="bar-track"><div class="bar" style="width:4.40%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">software_company · 38</div><div class="bar-track"><div class="bar" style="width:8.35%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">authors · 21</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">movies_4 · 53</div><div class="bar-track"><div class="bar" style="width:11.65%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">social_media · 21</div><div class="bar-track"><div class="bar" style="width:4.62%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">human_resources · 20</div><div class="bar-track"><div class="bar" style="width:4.40%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">regional_sales · 41</div><div class="bar-track"><div class="bar" style="width:9.01%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">computer_student · 12</div><div class="bar-track"><div class="bar" style="width:2.64%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">works_cycles · 455</div><div class="bar-track"><div class="bar" style="width:100.00%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">food_inspection_2 · 40</div><div class="bar-track"><div class="bar" style="width:8.79%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">citeseer · 6</div><div class="bar-track"><div class="bar" style="width:1.32%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">bike_share_1 · 46</div><div class="bar-track"><div class="bar" style="width:10.11%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">law_episode · 41</div><div class="bar-track"><div class="bar" style="width:9.01%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">cs_semester · 28</div><div class="bar-track"><div class="bar" style="width:6.15%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">legislator · 107</div><div class="bar-track"><div class="bar" style="width:23.52%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">world · 24</div><div class="bar-track"><div class="bar" style="width:5.27%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">cookbook · 39</div><div class="bar-track"><div class="bar" style="width:8.57%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">university · 20</div><div class="bar-track"><div class="bar" style="width:4.40%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">books · 50</div><div class="bar-track"><div class="bar" style="width:10.99%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">shipping · 32</div><div class="bar-track"><div class="bar" style="width:7.03%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">food_inspection · 25</div><div class="bar-track"><div class="bar" style="width:5.49%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">movie_platform · 55</div><div class="bar-track"><div class="bar" style="width:12.09%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">shakespeare · 19</div><div class="bar-track"><div class="bar" style="width:4.18%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">book_publishing_company · 64</div><div class="bar-track"><div class="bar" style="width:14.07%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">car_retails · 59</div><div class="bar-track"><div class="bar" style="width:12.97%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">mental_health_survey · 8</div><div class="bar-track"><div class="bar" style="width:1.76%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">hockey · 300</div><div class="bar-track"><div class="bar" style="width:65.93%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">music_platform_2 · 16</div><div class="bar-track"><div class="bar" style="width:3.52%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">address · 81</div><div class="bar-track"><div class="bar" style="width:17.80%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">menu · 45</div><div class="bar-track"><div class="bar" style="width:9.89%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">professional_basketball · 157</div><div class="bar-track"><div class="bar" style="width:34.51%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">cars · 16</div><div class="bar-track"><div class="bar" style="width:3.52%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">synthea · 85</div><div class="bar-track"><div class="bar" style="width:18.68%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">genes · 15</div><div class="bar-track"><div class="bar" style="width:3.30%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">retails · 61</div><div class="bar-track"><div class="bar" style="width:13.41%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">talkingdata · 48</div><div class="bar-track"><div class="bar" style="width:10.55%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">beer_factory · 61</div><div class="bar-track"><div class="bar" style="width:13.41%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">chicago_crime · 52</div><div class="bar-track"><div class="bar" style="width:11.43%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">mondial_geo · 139</div><div class="bar-track"><div class="bar" style="width:30.55%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">student_loan · 15</div><div class="bar-track"><div class="bar" style="width:3.30%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">codebase_comments · 25</div><div class="bar-track"><div class="bar" style="width:5.49%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">retail_world · 42</div><div class="bar-track"><div class="bar" style="width:9.23%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">music_tracker · 10</div><div class="bar-track"><div class="bar" style="width:2.20%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">disney · 23</div><div class="bar-track"><div class="bar" style="width:5.05%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">college_completion · 102</div><div class="bar-track"><div class="bar" style="width:22.42%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">ice_hockey_draft · 37</div><div class="bar-track"><div class="bar" style="width:8.13%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">world_development_indicators · 67</div><div class="bar-track"><div class="bar" style="width:14.73%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">airline · 32</div><div class="bar-track"><div class="bar" style="width:7.03%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">retail_complains · 58</div><div class="bar-track"><div class="bar" style="width:12.75%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">trains · 12</div><div class="bar-track"><div class="bar" style="width:2.64%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">public_review_platform · 75</div><div class="bar-track"><div class="bar" style="width:16.48%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">donor · 71</div><div class="bar-track"><div class="bar" style="width:15.60%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">coinmarketcap · 34</div><div class="bar-track"><div class="bar" style="width:7.47%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">simpson_episodes · 42</div><div class="bar-track"><div class="bar" style="width:9.23%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">movie_3 · 89</div><div class="bar-track"><div class="bar" style="width:19.56%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">shooting · 20</div><div class="bar-track"><div class="bar" style="width:4.40%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">superstore · 61</div><div class="bar-track"><div class="bar" style="width:13.41%;background:#0f766e"></div></div></div>
+<div class="bar-row"><div class="bar-label">movielens · 24</div><div class="bar-track"><div class="bar" style="width:5.27%;background:#0f766e"></div></div></div></div>
+      <div class="panel"><h3>Rows by DB</h3><div class="bar-row"><div class="bar-label">european_football_1 · 123,425</div><div class="bar-track"><div class="bar" style="width:0.08%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">sales_in_weather · 4,638,162</div><div class="bar-track"><div class="bar" style="width:2.95%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">craftbeer · 2,968</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">soccer_2016 · 297,816</div><div class="bar-track"><div class="bar" style="width:0.19%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">restaurant · 19,297</div><div class="bar-track"><div class="bar" style="width:0.01%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">movie · 7,659</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">olympics · 701,801</div><div class="bar-track"><div class="bar" style="width:0.45%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">language_corpus · 157,378,539</div><div class="bar-track"><div class="bar" style="width:100.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">app_store · 75,126</div><div class="bar-track"><div class="bar" style="width:0.05%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">sales · 6,735,506</div><div class="bar-track"><div class="bar" style="width:4.28%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">video_games · 105,319</div><div class="bar-track"><div class="bar" style="width:0.07%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">image_and_language · 3,589,599</div><div class="bar-track"><div class="bar" style="width:2.28%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">software_company · 4,141,029</div><div class="bar-track"><div class="bar" style="width:2.63%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">authors · 4,837,220</div><div class="bar-track"><div class="bar" style="width:3.07%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">movies_4 · 393,358</div><div class="bar-track"><div class="bar" style="width:0.25%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">social_media · 205,372</div><div class="bar-track"><div class="bar" style="width:0.13%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">human_resources · 37</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">regional_sales · 8,531</div><div class="bar-track"><div class="bar" style="width:0.01%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">computer_student · 712</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">works_cycles · 719,435</div><div class="bar-track"><div class="bar" style="width:0.46%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">food_inspection_2 · 701,342</div><div class="bar-track"><div class="bar" style="width:0.45%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">citeseer · 113,209</div><div class="bar-track"><div class="bar" style="width:0.07%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">bike_share_1 · 72,647,070</div><div class="bar-track"><div class="bar" style="width:46.16%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">law_episode · 3,350</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">cs_semester · 197</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">legislator · 27,826</div><div class="bar-track"><div class="bar" style="width:0.02%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">world · 5,302</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">cookbook · 10,371</div><div class="bar-track"><div class="bar" style="width:0.01%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">university · 32,042</div><div class="bar-track"><div class="bar" style="width:0.02%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">books · 84,337</div><div class="bar-track"><div class="bar" style="width:0.05%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">shipping · 1,684</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">food_inspection · 66,172</div><div class="bar-track"><div class="bar" style="width:0.04%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">movie_platform · 20,200,856</div><div class="bar-track"><div class="bar" style="width:12.84%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">shakespeare · 37,380</div><div class="bar-track"><div class="bar" style="width:0.02%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">book_publishing_company · 254</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">car_retails · 3,864</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">mental_health_survey · 234,750</div><div class="bar-track"><div class="bar" style="width:0.15%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">hockey · 96,061</div><div class="bar-track"><div class="bar" style="width:0.06%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">music_platform_2 · 2,283,775</div><div class="bar-track"><div class="bar" style="width:1.45%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">address · 258,473</div><div class="bar-track"><div class="bar" style="width:0.16%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">menu · 1,845,587</div><div class="bar-track"><div class="bar" style="width:1.17%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">professional_basketball · 44,822</div><div class="bar-track"><div class="bar" style="width:0.03%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">cars · 1,491</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">synthea · 170,810</div><div class="bar-track"><div class="bar" style="width:0.11%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">genes · 6,118</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">retails · 7,083,689</div><div class="bar-track"><div class="bar" style="width:4.50%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">talkingdata · 40,645,703</div><div class="bar-track"><div class="bar" style="width:25.83%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">beer_factory · 14,039</div><div class="bar-track"><div class="bar" style="width:0.01%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">chicago_crime · 268,824</div><div class="bar-track"><div class="bar" style="width:0.17%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">mondial_geo · 21,056</div><div class="bar-track"><div class="bar" style="width:0.01%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">student_loan · 5,288</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">codebase_comments · 9,119,319</div><div class="bar-track"><div class="bar" style="width:5.79%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">retail_world · 932</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">music_tracker · 237,002</div><div class="bar-track"><div class="bar" style="width:0.15%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">disney · 1,639</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">college_completion · 1,391,154</div><div class="bar-track"><div class="bar" style="width:0.88%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">ice_hockey_draft · 7,718</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">world_development_indicators · 6,195,691</div><div class="bar-track"><div class="bar" style="width:3.94%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">airline · 709,518</div><div class="bar-track"><div class="bar" style="width:0.45%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">retail_complains · 33,289</div><div class="bar-track"><div class="bar" style="width:0.02%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">trains · 83</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">public_review_platform · 990,846</div><div class="bar-track"><div class="bar" style="width:0.63%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">donor · 7,528,409</div><div class="bar-track"><div class="bar" style="width:4.78%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">coinmarketcap · 4,450,899</div><div class="bar-track"><div class="bar" style="width:2.83%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">simpson_episodes · 5,551</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">movie_3 · 47,273</div><div class="bar-track"><div class="bar" style="width:0.03%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">shooting · 812</div><div class="bar-track"><div class="bar" style="width:0.00%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">superstore · 27,787</div><div class="bar-track"><div class="bar" style="width:0.02%;background:#b45309"></div></div></div>
+<div class="bar-row"><div class="bar-label">movielens · 1,249,411</div><div class="bar-track"><div class="bar" style="width:0.79%;background:#b45309"></div></div></div></div>
+    </section>
+    <section class="cards">
+      
+            <section class="db-card">
+              <div class="card-head">
+                <h2>european_football_1</h2>
+                <span>2 tables · 11 columns</span>
+              </div>
+                <p>주요 테이블: divisions, matchs</p>
+              <div class="metric-grid">
+                <div><strong>123,425</strong><small>rows</small></div>
+                <div><strong>57</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">matchs · 123,404</span><span class="chip">divisions · 21</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>sales_in_weather</h2>
+                <span>3 tables · 26 columns</span>
+              </div>
+                <p>주요 테이블: sales_in_weather, weather, relation</p>
+              <div class="metric-grid">
+                <div><strong>4,638,162</strong><small>rows</small></div>
+                <div><strong>80</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">sales_in_weather · 4,617,600</span><span class="chip">weather · 20,517</span><span class="chip">relation · 45</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>craftbeer</h2>
+                <span>2 tables · 11 columns</span>
+              </div>
+                <p>주요 테이블: breweries, beers</p>
+              <div class="metric-grid">
+                <div><strong>2,968</strong><small>rows</small></div>
+                <div><strong>6</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">beers · 2,410</span><span class="chip">breweries · 558</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>soccer_2016</h2>
+                <span>21 tables · 85 columns</span>
+              </div>
+                <p>주요 테이블: Batting_Style, Bowling_Style, City, Country, Extra_Type</p>
+              <div class="metric-grid">
+                <div><strong>297,816</strong><small>rows</small></div>
+                <div><strong>258</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Ball_by_Ball · 136,590</span><span class="chip">Batsman_Scored · 133,097</span><span class="chip">Player_Match · 12,694</span><span class="chip">Extra_Runs · 7,469</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>restaurant</h2>
+                <span>3 tables · 12 columns</span>
+              </div>
+                <p>주요 테이블: geographic, generalinfo, location</p>
+              <div class="metric-grid">
+                <div><strong>19,297</strong><small>rows</small></div>
+                <div><strong>117</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">generalinfo · 9,590</span><span class="chip">location · 9,539</span><span class="chip">geographic · 168</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>movie</h2>
+                <span>3 tables · 27 columns</span>
+              </div>
+                <p>주요 테이블: actor, movie, characters</p>
+              <div class="metric-grid">
+                <div><strong>7,659</strong><small>rows</small></div>
+                <div><strong>46</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">characters · 4,312</span><span class="chip">actor · 2,713</span><span class="chip">movie · 634</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>olympics</h2>
+                <span>11 tables · 32 columns</span>
+              </div>
+                <p>주요 테이블: city, games, games_city, medal, noc_region</p>
+              <div class="metric-grid">
+                <div><strong>701,801</strong><small>rows</small></div>
+                <div><strong>169</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">competitor_event · 260,971</span><span class="chip">games_competitor · 180,252</span><span class="chip">person_region · 130,521</span><span class="chip">person · 128,854</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>language_corpus</h2>
+                <span>6 tables · 24 columns</span>
+              </div>
+                <p>주요 테이블: langs, pages, words, langs_words, pages_words</p>
+              <div class="metric-grid">
+                <div><strong>157,378,539</strong><small>rows</small></div>
+                <div><strong>136</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">pages_words · 129,131,916</span><span class="chip">biwords · 21,587,486</span><span class="chip">words · 2,764,996</span><span class="chip">langs_words · 2,764,996</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>app_store</h2>
+                <span>2 tables · 15 columns</span>
+              </div>
+                <p>주요 테이블: playstore, user_reviews</p>
+              <div class="metric-grid">
+                <div><strong>75,126</strong><small>rows</small></div>
+                <div><strong>63</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">user_reviews · 64,286</span><span class="chip">playstore · 10,840</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>sales</h2>
+                <span>4 tables · 16 columns</span>
+              </div>
+                <p>주요 테이블: Customers, Employees, Products, Sales</p>
+              <div class="metric-grid">
+                <div><strong>6,735,506</strong><small>rows</small></div>
+                <div><strong>107</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Sales · 6,715,221</span><span class="chip">Customers · 19,759</span><span class="chip">Products · 504</span><span class="chip">Employees · 22</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>video_games</h2>
+                <span>8 tables · 21 columns</span>
+              </div>
+                <p>주요 테이블: genre, game, platform, publisher, game_publisher</p>
+              <div class="metric-grid">
+                <div><strong>105,319</strong><small>rows</small></div>
+                <div><strong>201</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">region_sales · 65,320</span><span class="chip">game_platform · 16,326</span><span class="chip">game_publisher · 11,732</span><span class="chip">game · 11,317</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>image_and_language</h2>
+                <span>6 tables · 20 columns</span>
+              </div>
+                <p>주요 테이블: ATT_CLASSES, OBJ_CLASSES, IMG_OBJ, IMG_OBJ_ATT, PRED_CLASSES</p>
+              <div class="metric-grid">
+                <div><strong>3,589,599</strong><small>rows</small></div>
+                <div><strong>139</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">IMG_OBJ · 1,750,617</span><span class="chip">IMG_OBJ_ATT · 1,074,674</span><span class="chip">IMG_REL · 763,159</span><span class="chip">ATT_CLASSES · 699</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>software_company</h2>
+                <span>5 tables · 38 columns</span>
+              </div>
+                <p>주요 테이블: Demog, mailings3, Customers, Mailings1_2, Sales</p>
+              <div class="metric-grid">
+                <div><strong>4,141,029</strong><small>rows</small></div>
+                <div><strong>75</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Sales · 3,420,829</span><span class="chip">Customers · 360,000</span><span class="chip">mailings3 · 300,000</span><span class="chip">Mailings1_2 · 60,000</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>authors</h2>
+                <span>5 tables · 21 columns</span>
+              </div>
+                <p>주요 테이블: Author, Conference, Journal, Paper, PaperAuthor</p>
+              <div class="metric-grid">
+                <div><strong>4,837,220</strong><small>rows</small></div>
+                <div><strong>174</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">PaperAuthor · 2,315,574</span><span class="chip">Paper · 2,254,920</span><span class="chip">Author · 247,030</span><span class="chip">Journal · 15,151</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>movies_4</h2>
+                <span>17 tables · 53 columns</span>
+              </div>
+                <p>주요 테이블: country, department, gender, genre, keyword</p>
+              <div class="metric-grid">
+                <div><strong>393,358</strong><small>rows</small></div>
+                <div><strong>158</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">movie_crew · 129,581</span><span class="chip">person · 104,838</span><span class="chip">movie_cast · 59,083</span><span class="chip">movie_keywords · 36,162</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>social_media</h2>
+                <span>3 tables · 21 columns</span>
+              </div>
+                <p>주요 테이블: location, user, twitter</p>
+              <div class="metric-grid">
+                <div><strong>205,372</strong><small>rows</small></div>
+                <div><strong>78</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">twitter · 99,901</span><span class="chip">user · 99,260</span><span class="chip">location · 6,211</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>human_resources</h2>
+                <span>3 tables · 20 columns</span>
+              </div>
+                <p>주요 테이블: location, position, employee</p>
+              <div class="metric-grid">
+                <div><strong>37</strong><small>rows</small></div>
+                <div><strong>59</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">employee · 25</span><span class="chip">location · 8</span><span class="chip">position · 4</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>regional_sales</h2>
+                <span>6 tables · 41 columns</span>
+              </div>
+                <p>주요 테이블: Customers, Products, Regions, Sales Team, Store Locations</p>
+              <div class="metric-grid">
+                <div><strong>8,531</strong><small>rows</small></div>
+                <div><strong>164</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Sales Orders · 7,991</span><span class="chip">Store Locations · 367</span><span class="chip">Customers · 50</span><span class="chip">Regions · 48</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>computer_student</h2>
+                <span>4 tables · 12 columns</span>
+              </div>
+                <p>주요 테이블: course, person, advisedBy, taughtBy</p>
+              <div class="metric-grid">
+                <div><strong>712</strong><small>rows</small></div>
+                <div><strong>72</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">person · 278</span><span class="chip">taughtBy · 189</span><span class="chip">course · 132</span><span class="chip">advisedBy · 113</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>works_cycles</h2>
+                <span>65 tables · 455 columns</span>
+              </div>
+                <p>주요 테이블: CountryRegion, Culture, Currency, CountryRegionCurrency, Person</p>
+              <div class="metric-grid">
+                <div><strong>719,435</strong><small>rows</small></div>
+                <div><strong>474</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">SalesOrderDetail · 121,317</span><span class="chip">TransactionHistory · 113,443</span><span class="chip">TransactionHistoryArchive · 89,253</span><span class="chip">WorkOrder · 72,591</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>food_inspection_2</h2>
+                <span>5 tables · 40 columns</span>
+              </div>
+                <p>주요 테이블: employee, establishment, inspection, inspection_point, violation</p>
+              <div class="metric-grid">
+                <div><strong>701,342</strong><small>rows</small></div>
+                <div><strong>139</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">violation · 525,709</span><span class="chip">inspection · 143,870</span><span class="chip">establishment · 31,642</span><span class="chip">employee · 75</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>citeseer</h2>
+                <span>3 tables · 6 columns</span>
+              </div>
+                <p>주요 테이블: cites, paper, content</p>
+              <div class="metric-grid">
+                <div><strong>113,209</strong><small>rows</small></div>
+                <div><strong>19</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">content · 105,165</span><span class="chip">cites · 4,732</span><span class="chip">paper · 3,312</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>bike_share_1</h2>
+                <span>4 tables · 46 columns</span>
+              </div>
+                <p>주요 테이블: station, status, trip, weather</p>
+              <div class="metric-grid">
+                <div><strong>72,647,070</strong><small>rows</small></div>
+                <div><strong>113</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">status · 71,984,434</span><span class="chip">trip · 658,901</span><span class="chip">weather · 3,665</span><span class="chip">station · 70</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>law_episode</h2>
+                <span>6 tables · 41 columns</span>
+              </div>
+                <p>주요 테이블: Episode, Keyword, Person, Award, Credit</p>
+              <div class="metric-grid">
+                <div><strong>3,350</strong><small>rows</small></div>
+                <div><strong>114</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Credit · 2,231</span><span class="chip">Person · 800</span><span class="chip">Vote · 240</span><span class="chip">Keyword · 33</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>cs_semester</h2>
+                <span>5 tables · 28 columns</span>
+              </div>
+                <p>주요 테이블: course, prof, RA, registration, student</p>
+              <div class="metric-grid">
+                <div><strong>197</strong><small>rows</small></div>
+                <div><strong>113</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">registration · 101</span><span class="chip">student · 38</span><span class="chip">RA · 35</span><span class="chip">course · 13</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>legislator</h2>
+                <span>5 tables · 107 columns</span>
+              </div>
+                <p>주요 테이블: current, current-terms, historical, historical-terms, social-media</p>
+              <div class="metric-grid">
+                <div><strong>27,826</strong><small>rows</small></div>
+                <div><strong>177</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">historical · 11,864</span><span class="chip">historical-terms · 11,864</span><span class="chip">current-terms · 3,078</span><span class="chip">current · 541</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>world</h2>
+                <span>3 tables · 24 columns</span>
+              </div>
+                <p>주요 테이블: City, Country, CountryLanguage</p>
+              <div class="metric-grid">
+                <div><strong>5,302</strong><small>rows</small></div>
+                <div><strong>99</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">City · 4,079</span><span class="chip">CountryLanguage · 984</span><span class="chip">Country · 239</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>cookbook</h2>
+                <span>4 tables · 39 columns</span>
+              </div>
+                <p>주요 테이블: Ingredient, Recipe, Nutrition, Quantity</p>
+              <div class="metric-grid">
+                <div><strong>10,371</strong><small>rows</small></div>
+                <div><strong>69</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Quantity · 5,116</span><span class="chip">Ingredient · 3,346</span><span class="chip">Recipe · 1,031</span><span class="chip">Nutrition · 878</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>university</h2>
+                <span>6 tables · 20 columns</span>
+              </div>
+                <p>주요 테이블: country, ranking_system, ranking_criteria, university, university_ranking_year</p>
+              <div class="metric-grid">
+                <div><strong>32,042</strong><small>rows</small></div>
+                <div><strong>150</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">university_ranking_year · 29,612</span><span class="chip">university · 1,247</span><span class="chip">university_year · 1,085</span><span class="chip">country · 74</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>books</h2>
+                <span>15 tables · 50 columns</span>
+              </div>
+                <p>주요 테이블: address_status, author, book_language, country, address</p>
+              <div class="metric-grid">
+                <div><strong>84,337</strong><small>rows</small></div>
+                <div><strong>198</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">order_history · 22,348</span><span class="chip">book_author · 17,642</span><span class="chip">book · 11,127</span><span class="chip">author · 9,235</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>shipping</h2>
+                <span>5 tables · 32 columns</span>
+              </div>
+                <p>주요 테이블: city, customer, driver, truck, shipment</p>
+              <div class="metric-grid">
+                <div><strong>1,684</strong><small>rows</small></div>
+                <div><strong>106</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">shipment · 960</span><span class="chip">city · 601</span><span class="chip">customer · 100</span><span class="chip">truck · 12</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>food_inspection</h2>
+                <span>3 tables · 25 columns</span>
+              </div>
+                <p>주요 테이블: businesses, inspections, violations</p>
+              <div class="metric-grid">
+                <div><strong>66,172</strong><small>rows</small></div>
+                <div><strong>83</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">violations · 36,050</span><span class="chip">inspections · 23,764</span><span class="chip">businesses · 6,358</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>movie_platform</h2>
+                <span>5 tables · 55 columns</span>
+              </div>
+                <p>주요 테이블: lists, movies, ratings_users, lists_users, ratings</p>
+              <div class="metric-grid">
+                <div><strong>20,200,856</strong><small>rows</small></div>
+                <div><strong>167</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">ratings · 15,517,252</span><span class="chip">ratings_users · 4,297,641</span><span class="chip">movies · 226,087</span><span class="chip">lists_users · 80,311</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>shakespeare</h2>
+                <span>4 tables · 19 columns</span>
+              </div>
+                <p>주요 테이블: chapters, characters, paragraphs, works</p>
+              <div class="metric-grid">
+                <div><strong>37,380</strong><small>rows</small></div>
+                <div><strong>110</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">paragraphs · 35,126</span><span class="chip">characters · 1,266</span><span class="chip">chapters · 945</span><span class="chip">works · 43</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>book_publishing_company</h2>
+                <span>11 tables · 64 columns</span>
+              </div>
+                <p>주요 테이블: authors, jobs, publishers, employee, pub_info</p>
+              <div class="metric-grid">
+                <div><strong>254</strong><small>rows</small></div>
+                <div><strong>73</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">roysched · 86</span><span class="chip">employee · 43</span><span class="chip">titleauthor · 25</span><span class="chip">authors · 23</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>car_retails</h2>
+                <span>8 tables · 59 columns</span>
+              </div>
+                <p>주요 테이블: offices, employees, customers, orders, payments</p>
+              <div class="metric-grid">
+                <div><strong>3,864</strong><small>rows</small></div>
+                <div><strong>126</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">orderdetails · 2,996</span><span class="chip">orders · 326</span><span class="chip">payments · 273</span><span class="chip">customers · 122</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>mental_health_survey</h2>
+                <span>3 tables · 8 columns</span>
+              </div>
+                <p>주요 테이블: Question, Survey, Answer</p>
+              <div class="metric-grid">
+                <div><strong>234,750</strong><small>rows</small></div>
+                <div><strong>50</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Answer · 234,640</span><span class="chip">Question · 105</span><span class="chip">Survey · 5</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>hockey</h2>
+                <span>22 tables · 300 columns</span>
+              </div>
+                <p>주요 테이블: AwardsMisc, HOF, Teams, Coaches, AwardsCoaches</p>
+              <div class="metric-grid">
+                <div><strong>96,061</strong><small>rows</small></div>
+                <div><strong>207</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Scoring · 45,967</span><span class="chip">TeamVsTeam · 25,602</span><span class="chip">Master · 7,761</span><span class="chip">Goalies · 4,278</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>music_platform_2</h2>
+                <span>4 tables · 16 columns</span>
+              </div>
+                <p>주요 테이블: runs, podcasts, reviews, categories</p>
+              <div class="metric-grid">
+                <div><strong>2,283,775</strong><small>rows</small></div>
+                <div><strong>69</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">reviews · 1,964,856</span><span class="chip">categories · 210,329</span><span class="chip">podcasts · 108,578</span><span class="chip">runs · 12</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>address</h2>
+                <span>9 tables · 81 columns</span>
+              </div>
+                <p>주요 테이블: CBSA, state, congress, zip_data, alias</p>
+              <div class="metric-grid">
+                <div><strong>258,473</strong><small>rows</small></div>
+                <div><strong>150</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">area_code · 53,796</span><span class="chip">country · 51,001</span><span class="chip">zip_congress · 45,231</span><span class="chip">alias · 41,701</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>menu</h2>
+                <span>4 tables · 45 columns</span>
+              </div>
+                <p>주요 테이블: Dish, Menu, MenuPage, MenuItem</p>
+              <div class="metric-grid">
+                <div><strong>1,845,587</strong><small>rows</small></div>
+                <div><strong>108</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">MenuItem · 1,334,410</span><span class="chip">Dish · 426,713</span><span class="chip">MenuPage · 66,937</span><span class="chip">Menu · 17,527</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>professional_basketball</h2>
+                <span>9 tables · 157 columns</span>
+              </div>
+                <p>주요 테이블: awards_players, coaches, draft, player_allstar, players</p>
+              <div class="metric-grid">
+                <div><strong>44,822</strong><small>rows</small></div>
+                <div><strong>157</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">players_teams · 23,751</span><span class="chip">draft · 8,621</span><span class="chip">players · 5,062</span><span class="chip">awards_players · 1,719</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>cars</h2>
+                <span>4 tables · 16 columns</span>
+              </div>
+                <p>주요 테이블: country, price, data, production</p>
+              <div class="metric-grid">
+                <div><strong>1,491</strong><small>rows</small></div>
+                <div><strong>84</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">production · 692</span><span class="chip">price · 398</span><span class="chip">data · 398</span><span class="chip">country · 3</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>synthea</h2>
+                <span>11 tables · 85 columns</span>
+              </div>
+                <p>주요 테이블: all_prevalences, patients, encounters, allergies, careplans</p>
+              <div class="metric-grid">
+                <div><strong>170,810</strong><small>rows</small></div>
+                <div><strong>185</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">observations · 78,899</span><span class="chip">encounters · 20,524</span><span class="chip">claims · 20,523</span><span class="chip">immunizations · 13,189</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>genes</h2>
+                <span>3 tables · 15 columns</span>
+              </div>
+                <p>주요 테이블: Classification, Genes, Interactions</p>
+              <div class="metric-grid">
+                <div><strong>6,118</strong><small>rows</small></div>
+                <div><strong>23</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Genes · 4,346</span><span class="chip">Interactions · 910</span><span class="chip">Classification · 862</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>retails</h2>
+                <span>8 tables · 61 columns</span>
+              </div>
+                <p>주요 테이블: customer, lineitem, nation, orders, part</p>
+              <div class="metric-grid">
+                <div><strong>7,083,689</strong><small>rows</small></div>
+                <div><strong>245</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">lineitem · 4,423,659</span><span class="chip">orders · 1,500,000</span><span class="chip">partsupp · 800,000</span><span class="chip">part · 200,000</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>talkingdata</h2>
+                <span>12 tables · 48 columns</span>
+              </div>
+                <p>주요 테이블: app_all, app_events, app_events_relevant, app_labels, events</p>
+              <div class="metric-grid">
+                <div><strong>40,645,703</strong><small>rows</small></div>
+                <div><strong>206</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">app_events · 32,473,067</span><span class="chip">app_events_relevant · 3,701,900</span><span class="chip">events · 3,252,950</span><span class="chip">app_labels · 459,943</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>beer_factory</h2>
+                <span>7 tables · 61 columns</span>
+              </div>
+                <p>주요 테이블: customers, geolocation, location, rootbeerbrand, rootbeer</p>
+              <div class="metric-grid">
+                <div><strong>14,039</strong><small>rows</small></div>
+                <div><strong>131</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">rootbeer · 6,430</span><span class="chip">transaction · 6,312</span><span class="chip">rootbeerreview · 713</span><span class="chip">customers · 554</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>chicago_crime</h2>
+                <span>7 tables · 52 columns</span>
+              </div>
+                <p>주요 테이블: Community_Area, District, FBI_Code, IUCR, Neighborhood</p>
+              <div class="metric-grid">
+                <div><strong>268,824</strong><small>rows</small></div>
+                <div><strong>188</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Crime · 268,002</span><span class="chip">IUCR · 401</span><span class="chip">Neighborhood · 246</span><span class="chip">Community_Area · 77</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>mondial_geo</h2>
+                <span>34 tables · 139 columns</span>
+              </div>
+                <p>주요 테이블: borders, city, continent, country, desert</p>
+              <div class="metric-grid">
+                <div><strong>21,056</strong><small>rows</small></div>
+                <div><strong>293</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">isMember · 8,009</span><span class="chip">city · 3,111</span><span class="chip">province · 1,450</span><span class="chip">located · 858</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>student_loan</h2>
+                <span>10 tables · 15 columns</span>
+              </div>
+                <p>주요 테이블: bool, person, disabled, enlist, filed_for_bankrupcy</p>
+              <div class="metric-grid">
+                <div><strong>5,288</strong><small>rows</small></div>
+                <div><strong>203</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">enrolled · 1,194</span><span class="chip">person · 1,000</span><span class="chip">longest_absense_from_school · 1,000</span><span class="chip">no_payment_due · 1,000</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>codebase_comments</h2>
+                <span>4 tables · 25 columns</span>
+              </div>
+                <p>주요 테이블: Method, MethodParameter, Repo, Solution</p>
+              <div class="metric-grid">
+                <div><strong>9,119,319</strong><small>rows</small></div>
+                <div><strong>124</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">MethodParameter · 5,132,027</span><span class="chip">Method · 3,508,215</span><span class="chip">Solution · 338,087</span><span class="chip">Repo · 140,990</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>retail_world</h2>
+                <span>8 tables · 42 columns</span>
+              </div>
+                <p>주요 테이블: Categories, Customers, Employees, Shippers, Suppliers</p>
+              <div class="metric-grid">
+                <div><strong>932</strong><small>rows</small></div>
+                <div><strong>373</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">OrderDetails · 518</span><span class="chip">Orders · 196</span><span class="chip">Customers · 91</span><span class="chip">Products · 77</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>music_tracker</h2>
+                <span>2 tables · 10 columns</span>
+              </div>
+                <p>주요 테이블: torrents, tags</p>
+              <div class="metric-grid">
+                <div><strong>237,002</strong><small>rows</small></div>
+                <div><strong>45</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">tags · 161,283</span><span class="chip">torrents · 75,719</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>disney</h2>
+                <span>5 tables · 23 columns</span>
+              </div>
+                <p>주요 테이블: characters, director, movies_total_gross, revenue, voice-actors</p>
+              <div class="metric-grid">
+                <div><strong>1,639</strong><small>rows</small></div>
+                <div><strong>115</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">voice-actors · 922</span><span class="chip">movies_total_gross · 579</span><span class="chip">characters · 56</span><span class="chip">director · 56</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>college_completion</h2>
+                <span>4 tables · 102 columns</span>
+              </div>
+                <p>주요 테이블: institution_details, institution_grads, state_sector_grads, state_sector_details</p>
+              <div class="metric-grid">
+                <div><strong>1,391,154</strong><small>rows</small></div>
+                <div><strong>76</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">institution_grads · 1,302,102</span><span class="chip">state_sector_grads · 84,942</span><span class="chip">institution_details · 3,798</span><span class="chip">state_sector_details · 312</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>ice_hockey_draft</h2>
+                <span>4 tables · 37 columns</span>
+              </div>
+                <p>주요 테이블: height_info, weight_info, PlayerInfo, SeasonStatus</p>
+              <div class="metric-grid">
+                <div><strong>7,718</strong><small>rows</small></div>
+                <div><strong>84</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">SeasonStatus · 5,485</span><span class="chip">PlayerInfo · 2,171</span><span class="chip">weight_info · 46</span><span class="chip">height_info · 16</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>world_development_indicators</h2>
+                <span>6 tables · 67 columns</span>
+              </div>
+                <p>주요 테이블: Country, Series, CountryNotes, Footnotes, Indicators</p>
+              <div class="metric-grid">
+                <div><strong>6,195,691</strong><small>rows</small></div>
+                <div><strong>157</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Indicators · 5,656,458</span><span class="chip">Footnotes · 532,415</span><span class="chip">CountryNotes · 4,857</span><span class="chip">Series · 1,345</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>airline</h2>
+                <span>3 tables · 32 columns</span>
+              </div>
+                <p>주요 테이블: Air Carriers, Airports, Airlines</p>
+              <div class="metric-grid">
+                <div><strong>709,518</strong><small>rows</small></div>
+                <div><strong>92</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Airlines · 701,352</span><span class="chip">Airports · 6,510</span><span class="chip">Air Carriers · 1,656</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>retail_complains</h2>
+                <span>6 tables · 58 columns</span>
+              </div>
+                <p>주요 테이블: state, callcenterlogs, client, district, events</p>
+              <div class="metric-grid">
+                <div><strong>33,289</strong><small>rows</small></div>
+                <div><strong>168</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">events · 23,419</span><span class="chip">client · 5,369</span><span class="chip">callcenterlogs · 3,999</span><span class="chip">reviews · 377</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>trains</h2>
+                <span>2 tables · 12 columns</span>
+              </div>
+                <p>주요 테이블: cars, trains</p>
+              <div class="metric-grid">
+                <div><strong>83</strong><small>rows</small></div>
+                <div><strong>40</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">cars · 63</span><span class="chip">trains · 20</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>public_review_platform</h2>
+                <span>15 tables · 75 columns</span>
+              </div>
+                <p>주요 테이블: Attributes, Categories, Compliments, Days, Years</p>
+              <div class="metric-grid">
+                <div><strong>990,846</strong><small>rows</small></div>
+                <div><strong>381</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Reviews · 322,906</span><span class="chip">Business_Attributes · 206,934</span><span class="chip">Users_Compliments · 98,810</span><span class="chip">Tips · 87,157</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>donor</h2>
+                <span>4 tables · 71 columns</span>
+              </div>
+                <p>주요 테이블: essays, projects, donations, resources</p>
+              <div class="metric-grid">
+                <div><strong>7,528,409</strong><small>rows</small></div>
+                <div><strong>160</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">resources · 3,666,757</span><span class="chip">donations · 3,097,556</span><span class="chip">projects · 664,098</span><span class="chip">essays · 99,998</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>coinmarketcap</h2>
+                <span>2 tables · 34 columns</span>
+              </div>
+                <p>주요 테이블: coins, historical</p>
+              <div class="metric-grid">
+                <div><strong>4,450,899</strong><small>rows</small></div>
+                <div><strong>48</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">historical · 4,441,972</span><span class="chip">coins · 8,927</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>simpson_episodes</h2>
+                <span>7 tables · 42 columns</span>
+              </div>
+                <p>주요 테이블: Episode, Person, Award, Character_Award, Credit</p>
+              <div class="metric-grid">
+                <div><strong>5,551</strong><small>rows</small></div>
+                <div><strong>210</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">Credit · 4,557</span><span class="chip">Person · 369</span><span class="chip">Keyword · 307</span><span class="chip">Vote · 210</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>movie_3</h2>
+                <span>16 tables · 89 columns</span>
+              </div>
+                <p>주요 테이블: film_text, actor, address, category, city</p>
+              <div class="metric-grid">
+                <div><strong>47,273</strong><small>rows</small></div>
+                <div><strong>325</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">payment · 16,049</span><span class="chip">rental · 16,044</span><span class="chip">film_actor · 5,462</span><span class="chip">inventory · 4,581</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>shooting</h2>
+                <span>3 tables · 20 columns</span>
+              </div>
+                <p>주요 테이블: incidents, officers, subjects</p>
+              <div class="metric-grid">
+                <div><strong>812</strong><small>rows</small></div>
+                <div><strong>28</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">officers · 370</span><span class="chip">subjects · 223</span><span class="chip">incidents · 219</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>superstore</h2>
+                <span>6 tables · 61 columns</span>
+              </div>
+                <p>주요 테이블: people, product, central_superstore, east_superstore, south_superstore</p>
+              <div class="metric-grid">
+                <div><strong>27,787</strong><small>rows</small></div>
+                <div><strong>116</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">west_superstore · 6,406</span><span class="chip">east_superstore · 5,696</span><span class="chip">product · 5,298</span><span class="chip">central_superstore · 4,646</span></div>
+            </section>
+            
+            <section class="db-card">
+              <div class="card-head">
+                <h2>movielens</h2>
+                <span>7 tables · 24 columns</span>
+              </div>
+                <p>주요 테이블: users, directors, actors, movies, movies2actors</p>
+              <div class="metric-grid">
+                <div><strong>1,249,411</strong><small>rows</small></div>
+                <div><strong>98</strong><small>questions</small></div>
+                <div><strong>0</strong><small>challenging</small></div>
+              </div>
+              <div class="chips"><span class="chip">u2base · 996,159</span><span class="chip">movies2actors · 138,349</span><span class="chip">actors · 98,690</span><span class="chip">users · 6,039</span></div>
+            </section>
+            
+    </section>
+    <section>
+      <h3>Largest Tables and Samples</h3>
+      <table>
+        <thead><tr><th>DB</th><th>Table</th><th>내용</th><th>Rows</th><th>Cols</th><th>Sample</th></tr></thead>
+        <tbody>
+        <tr>
+          <td>language_corpus</td>
+          <td>pages_words</td>
+          <td>pages_words</td>
+          <td class="num">129,131,916</td>
+          <td class="num">3</td>
+          <td>pid=1; wid=1; occurrences=30</td>
+        </tr>
+        
+
+        <tr>
+          <td>bike_share_1</td>
+          <td>status</td>
+          <td>결과 상태 코드</td>
+          <td class="num">71,984,434</td>
+          <td class="num">4</td>
+          <td>station_id=2; bikes_available=2; docks_available=25</td>
+        </tr>
+        
+
+        <tr>
+          <td>talkingdata</td>
+          <td>app_events</td>
+          <td>app_events</td>
+          <td class="num">32,473,067</td>
+          <td class="num">4</td>
+          <td>event_id=2; app_id=-8942695423876075857; is_installed=1</td>
+        </tr>
+        
+
+        <tr>
+          <td>language_corpus</td>
+          <td>biwords</td>
+          <td>biwords</td>
+          <td class="num">21,587,486</td>
+          <td class="num">4</td>
+          <td>lid=1; w1st=1; w2nd=2</td>
+        </tr>
+        
+
+        <tr>
+          <td>movie_platform</td>
+          <td>ratings</td>
+          <td>ratings</td>
+          <td class="num">15,517,252</td>
+          <td class="num">13</td>
+          <td>movie_id=1066; rating_id=15610495; user_id=41579158</td>
+        </tr>
+        
+
+        <tr>
+          <td>sales</td>
+          <td>Sales</td>
+          <td>Sales</td>
+          <td class="num">6,715,221</td>
+          <td class="num">5</td>
+          <td>SalesID=1; SalesPersonID=17; CustomerID=10482</td>
+        </tr>
+        
+
+        <tr>
+          <td>world_development_indicators</td>
+          <td>Indicators</td>
+          <td>Indicators</td>
+          <td class="num">5,656,458</td>
+          <td class="num">6</td>
+          <td>CountryCode=ARB; IndicatorCode=SP.ADO.TFRT; Year=1960</td>
+        </tr>
+        
+
+        <tr>
+          <td>codebase_comments</td>
+          <td>MethodParameter</td>
+          <td>MethodParameter</td>
+          <td class="num">5,132,027</td>
+          <td class="num">4</td>
+          <td>Id=1; MethodId=1; Type=System.String</td>
+        </tr>
+        
+
+        <tr>
+          <td>sales_in_weather</td>
+          <td>sales_in_weather</td>
+          <td>sales_in_weather</td>
+          <td class="num">4,617,600</td>
+          <td class="num">4</td>
+          <td>date=2012-01-01; store_nbr=1; item_nbr=1</td>
+        </tr>
+        
+
+        <tr>
+          <td>coinmarketcap</td>
+          <td>historical</td>
+          <td>Historical</td>
+          <td class="num">4,441,972</td>
+          <td class="num">19</td>
+          <td>date=2013-04-28; coin_id=1; cmc_rank=1</td>
+        </tr>
+        
+
+        <tr>
+          <td>retails</td>
+          <td>lineitem</td>
+          <td>lineitem</td>
+          <td class="num">4,423,659</td>
+          <td class="num">16</td>
+          <td>l_orderkey=1; l_linenumber=1; l_suppkey=6296</td>
+        </tr>
+        
+
+        <tr>
+          <td>movie_platform</td>
+          <td>ratings_users</td>
+          <td>ratings_users</td>
+          <td class="num">4,297,641</td>
+          <td class="num">8</td>
+          <td>user_id=41579158; rating_date_utc=2017-06-10; user_trialist=0</td>
+        </tr>
+        
+
+        <tr>
+          <td>talkingdata</td>
+          <td>app_events_relevant</td>
+          <td>app_events_relevant</td>
+          <td class="num">3,701,900</td>
+          <td class="num">4</td>
+          <td>event_id=2; app_id=-8942695423876075857; is_installed=1</td>
+        </tr>
+        
+
+        <tr>
+          <td>donor</td>
+          <td>resources</td>
+          <td>resources</td>
+          <td class="num">3,666,757</td>
+          <td class="num">9</td>
+          <td>resourceid=8a1c1c45bc30d065061912fd9114fcf3; projectid=ffffc4f85b60efc5b52347df489d0238; vendorid=430</td>
+        </tr>
+        
+
+        <tr>
+          <td>codebase_comments</td>
+          <td>Method</td>
+          <td>Method</td>
+          <td class="num">3,508,215</td>
+          <td class="num">10</td>
+          <td>Id=1; Name=HtmlSharp.HtmlParser.Feed; FullComment=Feeds data into the parser</td>
+        </tr>
+        
+
+        <tr>
+          <td>software_company</td>
+          <td>Sales</td>
+          <td>Sales</td>
+          <td class="num">3,420,829</td>
+          <td class="num">4</td>
+          <td>EVENTID=0; REFID=0; EVENT_DATE=2006-12-21 12:00:00.0</td>
+        </tr>
+        
+
+        <tr>
+          <td>talkingdata</td>
+          <td>events</td>
+          <td>events</td>
+          <td class="num">3,252,950</td>
+          <td class="num">5</td>
+          <td>event_id=1; device_id=29182687948017175; timestamp=2016-05-01 00:55:25.0</td>
+        </tr>
+        
+
+        <tr>
+          <td>donor</td>
+          <td>donations</td>
+          <td>donations</td>
+          <td class="num">3,097,556</td>
+          <td class="num">21</td>
+          <td>donationid=431d720bc3dfd75ae445a5eaa0b0638d; projectid=ffffac55ee02a49d1abc87ba6fc61135; donor_acctid=22cbc920c9b5fa08dfb331422f5926b5</td>
+        </tr>
+        
+
+        <tr>
+          <td>language_corpus</td>
+          <td>words</td>
+          <td>words</td>
+          <td class="num">2,764,996</td>
+          <td class="num">3</td>
+          <td>wid=1; word=àbac; occurrences=242</td>
+        </tr>
+        
+
+        <tr>
+          <td>language_corpus</td>
+          <td>langs_words</td>
+          <td>langs_words</td>
+          <td class="num">2,764,996</td>
+          <td class="num">3</td>
+          <td>lid=1; wid=1; occurrences=242</td>
+        </tr>
+        
+
+        <tr>
+          <td>authors</td>
+          <td>PaperAuthor</td>
+          <td>PaperAuthor</td>
+          <td class="num">2,315,574</td>
+          <td class="num">4</td>
+          <td>PaperId=4; AuthorId=1456512; Name=ADAM G. JONES</td>
+        </tr>
+        
+
+        <tr>
+          <td>authors</td>
+          <td>Paper</td>
+          <td>Paper</td>
+          <td class="num">2,254,920</td>
+          <td class="num">6</td>
+          <td>Id=1; ConferenceId=167; JournalId=0</td>
+        </tr>
+        
+
+        <tr>
+          <td>music_platform_2</td>
+          <td>reviews</td>
+          <td>reviews</td>
+          <td class="num">1,964,856</td>
+          <td class="num">6</td>
+          <td>podcast_id=c61aa81c9b929a66f0c1db6cbe5d8548; title=really interesting!; content=Thanks for providing these insights.  Really ...</td>
+        </tr>
+        
+
+        <tr>
+          <td>image_and_language</td>
+          <td>IMG_OBJ</td>
+          <td>IMG_OBJ</td>
+          <td class="num">1,750,617</td>
+          <td class="num">7</td>
+          <td>IMG_ID=1; OBJ_SAMPLE_ID=1; OBJ_CLASS_ID=298</td>
+        </tr>
+        
+
+        <tr>
+          <td>retails</td>
+          <td>orders</td>
+          <td>orders</td>
+          <td class="num">1,500,000</td>
+          <td class="num">9</td>
+          <td>o_orderkey=1; o_custkey=73100; o_orderdate=1995-04-19</td>
+        </tr>
+        
+
+        <tr>
+          <td>menu</td>
+          <td>MenuItem</td>
+          <td>MenuItem</td>
+          <td class="num">1,334,410</td>
+          <td class="num">9</td>
+          <td>id=1; menu_page_id=1389; dish_id=1</td>
+        </tr>
+        
+
+        <tr>
+          <td>college_completion</td>
+          <td>institution_grads</td>
+          <td>institution_grads</td>
+          <td class="num">1,302,102</td>
+          <td class="num">10</td>
+          <td>unitid=100760; year=2011; gender=B</td>
+        </tr>
+        
+
+        <tr>
+          <td>language_corpus</td>
+          <td>pages</td>
+          <td>pages</td>
+          <td class="num">1,129,144</td>
+          <td class="num">6</td>
+          <td>pid=1; lid=1; page=1</td>
+        </tr>
+        
+
+        <tr>
+          <td>image_and_language</td>
+          <td>IMG_OBJ_ATT</td>
+          <td>IMG_OBJ_ATT</td>
+          <td class="num">1,074,674</td>
+          <td class="num">3</td>
+          <td>IMG_ID=1113; ATT_CLASS_ID=0; OBJ_SAMPLE_ID=21</td>
+        </tr>
+        
+
+        <tr>
+          <td>movielens</td>
+          <td>u2base</td>
+          <td>u2base</td>
+          <td class="num">996,159</td>
+          <td class="num">3</td>
+          <td>userid=2; movieid=1964242; rating=1</td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

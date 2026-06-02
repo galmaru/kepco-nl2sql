@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BIRD DB Similarity Top 10 for KEPCO NL2SQL</title>
+  <style>
+    :root {
+      --bg: #f6f6f3;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #667085;
+      --line: #d9d9d2;
+      --blue: #1d4ed8;
+      --teal: #0f766e;
+      --gold: #b45309;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header {
+      padding: 30px 36px 22px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    h1, h2 { letter-spacing: 0; margin: 0; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 20px; display: inline; }
+    p { color: var(--muted); line-height: 1.5; margin: 8px 0 0; }
+    main { padding: 24px 36px 42px; }
+    .intro {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .panel, .db-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .panel { padding: 16px; }
+    .panel h3 { margin: 0 0 10px; font-size: 16px; }
+    .panel ul { margin: 0; padding-left: 18px; color: var(--muted); line-height: 1.6; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th { background: #ededE8; color: #3d4654; font-size: 12px; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      background: #f0f2f4;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .num, .rank { text-align: right; font-variant-numeric: tabular-nums; }
+    .rank { font-weight: 700; color: var(--blue); }
+    .tag {
+      display: inline-block;
+      border: 1px solid #a7d4ce;
+      background: #e7f5f2;
+      color: #0f5c56;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .db-card { padding: 18px; margin-top: 16px; }
+    .card-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .rank-badge {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: white;
+      font-weight: 700;
+      margin-right: 8px;
+      font-size: 13px;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+    .metrics div {
+      background: #f4f4f1;
+      border-radius: 6px;
+      padding: 10px;
+    }
+    .metrics strong { display: block; font-size: 18px; }
+    .metrics small { color: var(--muted); }
+    .rowbar-label {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 2px 0 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .rowbar-label strong { color: var(--ink); font-size: 13px; }
+    .question-box {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid #d8e7df;
+      background: #f0f8f4;
+      border-radius: 8px;
+    }
+    .question-box strong { display: block; margin-bottom: 6px; }
+    .question-box ul { margin: 0; padding-left: 18px; color: #385344; line-height: 1.5; }
+    .rowbar {
+      height: 10px;
+      background: #eeeeea;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .rowbar div { height: 10px; background: var(--gold); border-radius: 999px; }
+    @media (max-width: 920px) {
+      header, main { padding-left: 18px; padding-right: 18px; }
+      .intro, .metrics { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BIRD DB Similarity Top 10 for KEPCO NL2SQL</h1>
+    <p>전력 사용량, 요금, 고객, 지역, 송변전·배전 설비 운영 데이터와 유사한 BIRD dev/train DB를 우선순위로 정리했습니다.</p>
+  </header>
+  <main>
+    <section class="intro">
+      <div class="panel">
+        <h3>추천 기준</h3>
+        <ul>
+          <li>사용량·금액·단가·청구 같은 수치 집계가 있는가</li>
+          <li>고객, 지역, 기간, 지점/설비를 조인해 물을 수 있는가</li>
+          <li>실제 업무 DB처럼 여러 테이블 조인과 상태 이력을 포함하는가</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>활용 방향</h3>
+        <ul>
+          <li><b>기본 평가</b>: sales_in_weather, debit_card_specializing</li>
+          <li><b>요금/고객</b>: regional_sales, superstore, financial</li>
+          <li><b>설비/운영</b>: bike_share_1, works_cycles</li>
+        </ul>
+      </div>
+    </section>
+    <section>
+      <table>
+        <thead>
+          <tr><th>Rank</th><th>DB</th><th>축</th><th>KEPCO 유사 포인트</th><th>Tables</th><th>Cols</th><th>Rows</th><th>DB Size</th><th>Questions</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+              <td class="rank">1</td>
+              <td><code>train.sales_in_weather</code></td>
+              <td><span class="tag">전력 사용량</span></td>
+              <td>전력 사용량/계량값 + 기상/지점 조인 패턴</td>
+              <td class="num">3</td>
+              <td class="num">26</td>
+              <td class="num">4,638,162</td>
+              <td class="num">0 B</td>
+              <td class="num">80</td>
+            </tr>
+            
+            <tr>
+              <td class="rank">2</td>
+              <td><code>dev.debit_card_specializing</code></td>
+              <td><span class="tag">고객/요금</span></td>
+              <td>고객별 월별 사용량, 거래 금액, 단가 패턴</td>
+              <td class="num">5</td>
+              <td class="num">21</td>
+              <td class="num">423,050</td>
+              <td class="num">0 B</td>
+              <td class="num">64</td>
+            </tr>
+            
+            <tr>
+              <td class="rank">3</td>
+              <td><code>train.regional_sales</code></td>
+              <td><span class="tag">지역/요금</span></td>
+              <td>지역/고객/상품/주문/매출 집계 패턴</td>
+              <td class="num">6</td>
+              <td class="num">41</td>
+              <td class="num">8,531</td>
+              <td class="num">0 B</td>
+              <td class="num">164</td>
+            </tr>
+            
+            <tr>
+              <td class="rank">4</td>
+              <td><code>train.superstore</code></td>
+              <td><span class="tag">지역/고객</span></td>
+              <td>지역별 고객·상품·판매 데이터 마트 패턴</td>
+              <td class="num">6</td>
+              <td class="num">61</td>
+              <td class="num">27,787</td>
+              <td class="num">0 B</td>
+              <td class="num">116</td>
+            </tr>
+            
+            <tr>
+              <td class="rank">5</td>
+              <td><code>train.retails</code></td>
+              <td><span class="tag">대규모 조인</span></td>
+              <td>대규모 고객·주문·청구/라인아이템 조인 패턴</td>
+              <td class="num">8</td>
+              <td class="num">61</td>
+              <td class="num">7,083,689</td>
+              <td class="num">0 B</td>
+              <td class="num">245</td>
+            </tr>
+            
+            <tr>
+              <td class="rank">6</td>
+              <td><code>train.bike_share_1</code></td>
+              <td><span class="tag">설비 상태</span></td>
+              <td>설비/스테이션 상태 이력과 시간대 운영 패턴</td>
+              <td class="num">4</td>
+              <td class="num">46</td>
+              <td class="num">72,647,070</td>
+              <td class="num">0 B</td>
+              <td class="num">113</td>
+            </tr>
+            
+            <tr>
+              <td class="rank">7</td>
+              <td><code>train.works_cycles</code></td>
+              <td><span class="tag">복잡 실무 DB</span></td>
+              <td>실무 ERP형 복잡 조인, 주문·생산·재고·거래 이력</td>
+              <td class="num">65</td>
+              <td class="num">455</td>
+              <td class="num">719,435</td>
+              <td class="num">0 B</td>
+              <td class="num">474</td>
+            </tr>
+            
+            <tr>
+              <td class="rank">8</td>
+              <td><code>dev.financial</code></td>
+              <td><span class="tag">거래/납부</span></td>
+              <td>고객 계좌, 거래, 대출, 납부 금액 패턴</td>
+              <td class="num">8</td>
+              <td class="num">55</td>
+              <td class="num">1,079,680</td>
+              <td class="num">0 B</td>
+              <td class="num">106</td>
+            </tr>
+            
+            <tr>
+              <td class="rank">9</td>
+              <td><code>train.car_retails</code></td>
+              <td><span class="tag">고객/결제</span></td>
+              <td>고객, 주문, 결제, 상품, 사업소/직원 패턴</td>
+              <td class="num">8</td>
+              <td class="num">59</td>
+              <td class="num">3,864</td>
+              <td class="num">0 B</td>
+              <td class="num">126</td>
+            </tr>
+            
+            <tr>
+              <td class="rank">10</td>
+              <td><code>train.synthea</code></td>
+              <td><span class="tag">이벤트/청구</span></td>
+              <td>고객/환자 단위 이벤트, 관측값, 청구/처치 이력 패턴</td>
+              <td class="num">11</td>
+              <td class="num">85</td>
+              <td class="num">170,810</td>
+              <td class="num">0 B</td>
+              <td class="num">185</td>
+            </tr>
+            </tbody>
+      </table>
+    </section>
+    
+            <section class="db-card" id="train.sales_in_weather">
+              <div class="card-title">
+                <div>
+                  <span class="rank-badge">1</span>
+                  <h2>train.sales_in_weather</h2>
+                </div>
+                <span class="tag">전력 사용량</span>
+              </div>
+              <p>매장-측정소 매핑을 통해 날짜별 판매량과 날씨를 함께 분석하는 DB입니다. KEPCO의 지역/사업소/계량 지점별 전력 사용량, 기온 영향, 기간별 사용량 추이 질문을 대체하기 가장 좋습니다.</p>
+              <div class="question-box">
+                <strong>KEPCO 질문 유형</strong>
+                <ul>
+                  <li>월별/일별 전력 사용량 합계와 증감률</li><li>지점 또는 지역별 사용량 순위</li><li>기온/날씨와 사용량의 관계</li><li>측정 지점과 관측소 매핑 기반 조인</li>
+                </ul>
+              </div>
+              <div class="metrics">
+                <div><strong>3</strong><small>tables</small></div>
+                <div><strong>26</strong><small>columns</small></div>
+                <div><strong>4,638,162</strong><small>rows</small></div>
+                <div><strong>0 B</strong><small>sqlite size</small></div>
+                <div><strong>80</strong><small>questions</small></div>
+              </div>
+              <div class="rowbar-label">
+                <strong>DB 전체 row 수 상대 규모</strong>
+                <span>Top 10 중 가장 큰 DB를 100%로 둔 비교입니다.</span>
+              </div>
+              <div class="rowbar"><div style="width:6.38%"></div></div>
+              <table>
+                <thead>
+                  <tr><th>Table</th><th>테이블 역할</th><th>Rows</th><th>Cols</th><th>주요 컬럼</th><th>실제 샘플 값</th></tr>
+                </thead>
+                <tbody>
+            <tr>
+              <td><code>sales_in_weather</code></td>
+              <td>날짜, 매장, 품목별 판매 수량 테이블입니다. KEPCO의 일별/월별 전력 사용량 fact 테이블처럼 사용할 수 있습니다.</td>
+              <td class="num">4,617,600</td>
+              <td class="num">4</td>
+              <td><code>date</code>, <code>store_nbr</code>, <code>item_nbr</code>, <code>units</code></td>
+              <td><b>date</b>=2012-01-01; <b>store_nbr</b>=1; <b>item_nbr</b>=1; <b>units</b>=0</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>weather</code></td>
+              <td>측정소와 날짜별 기상 관측 테이블입니다. 기온, 강수, 적설 등 외부 요인과 사용량을 연결하는 역할입니다.</td>
+              <td class="num">20,517</td>
+              <td class="num">20</td>
+              <td><code>station_nbr</code>, <code>date</code>, <code>tmax</code>, <code>tmin</code>, <code>tavg</code>, <code>depart</code></td>
+              <td><b>station_nbr</b>=1; <b>date</b>=2012-01-01; <b>tmax</b>=52; <b>tmin</b>=31</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>relation</code></td>
+              <td>매장과 기상 측정소를 연결하는 매핑 테이블입니다. KEPCO의 사업소-관측소 또는 계량지점-지역 매핑과 비슷합니다.</td>
+              <td class="num">45</td>
+              <td class="num">2</td>
+              <td><code>store_nbr</code>, <code>station_nbr</code></td>
+              <td><b>store_nbr</b>=1; <b>station_nbr</b>=1</td>
+            </tr>
+            </tbody>
+              </table>
+            </section>
+            
+            <section class="db-card" id="dev.debit_card_specializing">
+              <div class="card-title">
+                <div>
+                  <span class="rank-badge">2</span>
+                  <h2>dev.debit_card_specializing</h2>
+                </div>
+                <span class="tag">고객/요금</span>
+              </div>
+              <p>고객, 주유소, 상품, 거래, 월별 소비량이 연결된 DB입니다. 고객번호 단위 월별 전력 사용량, 사용요금, 단가, 고객군별 사용 패턴을 흉내 내기에 좋습니다.</p>
+              <div class="question-box">
+                <strong>KEPCO 질문 유형</strong>
+                <ul>
+                  <li>고객별 월별 사용량 조회</li><li>고객군/계약군별 평균 사용량</li><li>거래 금액과 사용량 기반 단가 계산</li><li>지점별 또는 상품/요금 항목별 소비 비교</li>
+                </ul>
+              </div>
+              <div class="metrics">
+                <div><strong>5</strong><small>tables</small></div>
+                <div><strong>21</strong><small>columns</small></div>
+                <div><strong>423,050</strong><small>rows</small></div>
+                <div><strong>0 B</strong><small>sqlite size</small></div>
+                <div><strong>64</strong><small>questions</small></div>
+              </div>
+              <div class="rowbar-label">
+                <strong>DB 전체 row 수 상대 규모</strong>
+                <span>Top 10 중 가장 큰 DB를 100%로 둔 비교입니다.</span>
+              </div>
+              <div class="rowbar"><div style="width:0.58%"></div></div>
+              <table>
+                <thead>
+                  <tr><th>Table</th><th>테이블 역할</th><th>Rows</th><th>Cols</th><th>주요 컬럼</th><th>실제 샘플 값</th></tr>
+                </thead>
+                <tbody>
+            <tr>
+              <td><code>yearmonth</code></td>
+              <td>고객별 월별 소비량 테이블입니다. 고객번호 단위 월별 전력 사용량 테스트에 가장 직접적으로 대응됩니다.</td>
+              <td class="num">383,282</td>
+              <td class="num">3</td>
+              <td><code>CustomerID</code>, <code>Date</code>, <code>Consumption</code></td>
+              <td><b>CustomerID</b>=5; <b>Date</b>=201207; <b>Consumption</b>=528.3</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>customers</code></td>
+              <td>고객 ID, 세그먼트, 통화 정보를 담은 고객 차원 테이블입니다.</td>
+              <td class="num">32,461</td>
+              <td class="num">3</td>
+              <td><code>CustomerID</code>, <code>Segment</code>, <code>Currency</code></td>
+              <td><b>CustomerID</b>=3; <b>Segment</b>=SME; <b>Currency</b>=EUR</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>gasstations</code></td>
+              <td>주유소 ID, 체인, 국가, 세그먼트가 있는 지점/사업소 차원 테이블입니다.</td>
+              <td class="num">5,716</td>
+              <td class="num">4</td>
+              <td><code>GasStationID</code>, <code>ChainID</code>, <code>Country</code>, <code>Segment</code></td>
+              <td><b>GasStationID</b>=44; <b>ChainID</b>=13; <b>Country</b>=CZE; <b>Segment</b>=Value for money</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>transactions_1k</code></td>
+              <td>거래 일시, 고객, 카드, 주유소, 상품, 금액, 가격이 있는 거래 fact 테이블입니다.</td>
+              <td class="num">1,000</td>
+              <td class="num">9</td>
+              <td><code>TransactionID</code>, <code>Date</code>, <code>Time</code>, <code>CustomerID</code>, <code>CardID</code>, <code>GasStationID</code></td>
+              <td><b>TransactionID</b>=1; <b>Date</b>=2012-08-24; <b>Time</b>=09:41:00; <b>CustomerID</b>=31543</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>products</code></td>
+              <td>상품 ID와 설명을 담은 요금 항목 또는 서비스 항목 차원으로 볼 수 있습니다.</td>
+              <td class="num">591</td>
+              <td class="num">2</td>
+              <td><code>ProductID</code>, <code>Description</code></td>
+              <td><b>ProductID</b>=1; <b>Description</b>=Rucní zadání</td>
+            </tr>
+            </tbody>
+              </table>
+            </section>
+            
+            <section class="db-card" id="train.regional_sales">
+              <div class="card-title">
+                <div>
+                  <span class="rank-badge">3</span>
+                  <h2>train.regional_sales</h2>
+                </div>
+                <span class="tag">지역/요금</span>
+              </div>
+              <p>고객, 상품, 판매팀, 매장 위치, 지역, 주문이 정규화된 영업 데이터입니다. 지역별 요금, 고객군별 청구액, 사업소별 판매/수납 실적 같은 집계형 질문에 잘 맞습니다.</p>
+              <div class="question-box">
+                <strong>KEPCO 질문 유형</strong>
+                <ul>
+                  <li>지역별 총액/평균액 집계</li><li>고객별 사용·요금 순위</li><li>사업소/영업팀/지역 코드 조인</li><li>상품 또는 요금 항목별 매출 분석</li>
+                </ul>
+              </div>
+              <div class="metrics">
+                <div><strong>6</strong><small>tables</small></div>
+                <div><strong>41</strong><small>columns</small></div>
+                <div><strong>8,531</strong><small>rows</small></div>
+                <div><strong>0 B</strong><small>sqlite size</small></div>
+                <div><strong>164</strong><small>questions</small></div>
+              </div>
+              <div class="rowbar-label">
+                <strong>DB 전체 row 수 상대 규모</strong>
+                <span>Top 10 중 가장 큰 DB를 100%로 둔 비교입니다.</span>
+              </div>
+              <div class="rowbar"><div style="width:0.01%"></div></div>
+              <table>
+                <thead>
+                  <tr><th>Table</th><th>테이블 역할</th><th>Rows</th><th>Cols</th><th>주요 컬럼</th><th>실제 샘플 값</th></tr>
+                </thead>
+                <tbody>
+            <tr>
+              <td><code>Sales Orders</code></td>
+              <td>주문번호, 고객, 매장, 상품, 판매채널, 주문일, 수량/금액 필드를 가진 중심 fact 테이블입니다.</td>
+              <td class="num">7,991</td>
+              <td class="num">16</td>
+              <td><code>OrderNumber</code>, <code>_SalesTeamID</code>, <code>_CustomerID</code>, <code>_StoreID</code>, <code>_ProductID</code>, <code>Sales Channel</code></td>
+              <td><b>OrderNumber</b>=SO - 000101; <b>_SalesTeamID</b>=6; <b>_CustomerID</b>=15; <b>_StoreID</b>=259</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>Store Locations</code></td>
+              <td>매장 ID와 도시, 주, 카운티, 위도/경도 등 위치 정보를 담은 지역 차원입니다.</td>
+              <td class="num">367</td>
+              <td class="num">15</td>
+              <td><code>StoreID</code>, <code>StateCode</code>, <code>City Name</code>, <code>County</code>, <code>State</code>, <code>Type</code></td>
+              <td><b>StoreID</b>=1; <b>StateCode</b>=AL; <b>City Name</b>=Birmingham; <b>County</b>=Shelby County/Jefferson County</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>Customers</code></td>
+              <td>고객 ID와 고객명을 담은 고객 차원입니다.</td>
+              <td class="num">50</td>
+              <td class="num">2</td>
+              <td><code>CustomerID</code>, <code>Customer Names</code></td>
+              <td><b>CustomerID</b>=1; <b>Customer Names</b>=Avon Corp</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>Regions</code></td>
+              <td>주 코드와 권역을 연결하는 지역 매핑 테이블입니다.</td>
+              <td class="num">48</td>
+              <td class="num">3</td>
+              <td><code>StateCode</code>, <code>State</code>, <code>Region</code></td>
+              <td><b>StateCode</b>=AL; <b>State</b>=Alabama; <b>Region</b>=South</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>Products</code></td>
+              <td>상품 ID와 상품명을 담은 상품/요금 항목 차원입니다.</td>
+              <td class="num">47</td>
+              <td class="num">2</td>
+              <td><code>ProductID</code>, <code>Product Name</code></td>
+              <td><b>ProductID</b>=1; <b>Product Name</b>=Cookware</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>Sales Team</code></td>
+              <td>영업팀과 권역 정보를 담은 조직 차원입니다.</td>
+              <td class="num">28</td>
+              <td class="num">3</td>
+              <td><code>SalesTeamID</code>, <code>Sales Team</code>, <code>Region</code></td>
+              <td><b>SalesTeamID</b>=1; <b>Sales Team</b>=Adam Hernandez; <b>Region</b>=Northeast</td>
+            </tr>
+            </tbody>
+              </table>
+            </section>
+            
+            <section class="db-card" id="train.superstore">
+              <div class="card-title">
+                <div>
+                  <span class="rank-badge">4</span>
+                  <h2>train.superstore</h2>
+                </div>
+                <span class="tag">지역/고객</span>
+              </div>
+              <p>지역별로 분리된 판매 테이블과 고객·상품 차원이 있는 데이터 마트형 DB입니다. 지역본부별 전력 판매, 고객 세그먼트별 사용량, 상품/계약종별 비교 질문을 만들기 쉽습니다.</p>
+              <div class="question-box">
+                <strong>KEPCO 질문 유형</strong>
+                <ul>
+                  <li>권역별 실적 비교</li><li>고객 세그먼트별 매출/사용량 분석</li><li>상품군 또는 계약종별 집계</li><li>여러 지역 테이블 통합 질의</li>
+                </ul>
+              </div>
+              <div class="metrics">
+                <div><strong>6</strong><small>tables</small></div>
+                <div><strong>61</strong><small>columns</small></div>
+                <div><strong>27,787</strong><small>rows</small></div>
+                <div><strong>0 B</strong><small>sqlite size</small></div>
+                <div><strong>116</strong><small>questions</small></div>
+              </div>
+              <div class="rowbar-label">
+                <strong>DB 전체 row 수 상대 규모</strong>
+                <span>Top 10 중 가장 큰 DB를 100%로 둔 비교입니다.</span>
+              </div>
+              <div class="rowbar"><div style="width:0.04%"></div></div>
+              <table>
+                <thead>
+                  <tr><th>Table</th><th>테이블 역할</th><th>Rows</th><th>Cols</th><th>주요 컬럼</th><th>실제 샘플 값</th></tr>
+                </thead>
+                <tbody>
+            <tr>
+              <td><code>west_superstore</code></td>
+              <td>서부 권역 판매 fact 테이블입니다. 주문일, 고객, 상품, 매출, 수량, 할인 등이 있습니다.</td>
+              <td class="num">6,406</td>
+              <td class="num">12</td>
+              <td><code>Row ID</code>, <code>Customer ID</code>, <code>Region</code>, <code>Product ID</code>, <code>Order ID</code>, <code>Order Date</code></td>
+              <td><b>Row ID</b>=13583; <b>Customer ID</b>=LS-17230; <b>Region</b>=West; <b>Product ID</b>=OFF-PA-10002005</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>east_superstore</code></td>
+              <td>동부 권역 판매 fact 테이블입니다. 지역별 분리 테이블을 통합하는 평가에 좋습니다.</td>
+              <td class="num">5,696</td>
+              <td class="num">12</td>
+              <td><code>Row ID</code>, <code>Customer ID</code>, <code>Region</code>, <code>Product ID</code>, <code>Order ID</code>, <code>Order Date</code></td>
+              <td><b>Row ID</b>=4647; <b>Customer ID</b>=MB-18085; <b>Region</b>=East; <b>Product ID</b>=OFF-AR-10003478</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>product</code></td>
+              <td>상품 ID, 상품명, 카테고리, 하위 카테고리를 담은 상품 차원입니다.</td>
+              <td class="num">5,298</td>
+              <td class="num">5</td>
+              <td><code>Product ID</code>, <code>Region</code>, <code>Product Name</code>, <code>Category</code>, <code>Sub-Category</code></td>
+              <td><b>Product ID</b>=FUR-BO-10000330; <b>Region</b>=West; <b>Product Name</b>=Sauder Camden County Barrister Bookcase, Planked Cherry Finish; <b>Category</b>=Furniture</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>central_superstore</code></td>
+              <td>중부 권역 판매 fact 테이블입니다.</td>
+              <td class="num">4,646</td>
+              <td class="num">12</td>
+              <td><code>Row ID</code>, <code>Customer ID</code>, <code>Region</code>, <code>Product ID</code>, <code>Order ID</code>, <code>Order Date</code></td>
+              <td><b>Row ID</b>=1; <b>Customer ID</b>=DP-13000; <b>Region</b>=Central; <b>Product ID</b>=OFF-PA-10000174</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>south_superstore</code></td>
+              <td>남부 권역 판매 fact 테이블입니다.</td>
+              <td class="num">3,240</td>
+              <td class="num">12</td>
+              <td><code>Row ID</code>, <code>Customer ID</code>, <code>Region</code>, <code>Product ID</code>, <code>Order ID</code>, <code>Order Date</code></td>
+              <td><b>Row ID</b>=10343; <b>Customer ID</b>=JO-15145; <b>Region</b>=South; <b>Product ID</b>=OFF-AR-10002399</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>people</code></td>
+              <td>고객 ID, 고객명, 세그먼트, 도시, 주, 우편번호를 담은 고객/지역 차원입니다.</td>
+              <td class="num">2,501</td>
+              <td class="num">8</td>
+              <td><code>Customer ID</code>, <code>Region</code>, <code>Customer Name</code>, <code>Segment</code>, <code>Country</code>, <code>City</code></td>
+              <td><b>Customer ID</b>=AA-10315; <b>Region</b>=Central; <b>Customer Name</b>=Alex Avila; <b>Segment</b>=Consumer</td>
+            </tr>
+            </tbody>
+              </table>
+            </section>
+            
+            <section class="db-card" id="train.retails">
+              <div class="card-title">
+                <div>
+                  <span class="rank-badge">5</span>
+                  <h2>train.retails</h2>
+                </div>
+                <span class="tag">대규모 조인</span>
+              </div>
+              <p>TPC-H 스타일의 대규모 주문, 주문상세, 고객, 공급자, 지역 데이터입니다. 대용량 고객·청구·상세내역 테이블을 조인하는 성능/정확도 평가에 유용합니다.</p>
+              <div class="question-box">
+                <strong>KEPCO 질문 유형</strong>
+                <ul>
+                  <li>대용량 상세 사용내역 집계</li><li>고객-지역-주문상세 다중 조인</li><li>기간별 청구 또는 사용 금액 집계</li><li>지역/국가 계층 기반 비교</li>
+                </ul>
+              </div>
+              <div class="metrics">
+                <div><strong>8</strong><small>tables</small></div>
+                <div><strong>61</strong><small>columns</small></div>
+                <div><strong>7,083,689</strong><small>rows</small></div>
+                <div><strong>0 B</strong><small>sqlite size</small></div>
+                <div><strong>245</strong><small>questions</small></div>
+              </div>
+              <div class="rowbar-label">
+                <strong>DB 전체 row 수 상대 규모</strong>
+                <span>Top 10 중 가장 큰 DB를 100%로 둔 비교입니다.</span>
+              </div>
+              <div class="rowbar"><div style="width:9.75%"></div></div>
+              <table>
+                <thead>
+                  <tr><th>Table</th><th>테이블 역할</th><th>Rows</th><th>Cols</th><th>주요 컬럼</th><th>실제 샘플 값</th></tr>
+                </thead>
+                <tbody>
+            <tr>
+              <td><code>lineitem</code></td>
+              <td>주문 상세 라인 테이블입니다. 수량, 할인, 세금, 배송일 등이 있어 상세 사용내역 fact로 볼 수 있습니다.</td>
+              <td class="num">4,423,659</td>
+              <td class="num">16</td>
+              <td><code>l_orderkey</code>, <code>l_linenumber</code>, <code>l_suppkey</code>, <code>l_partkey</code>, <code>l_shipdate</code>, <code>l_discount</code></td>
+              <td><b>l_orderkey</b>=1; <b>l_linenumber</b>=1; <b>l_suppkey</b>=6296; <b>l_partkey</b>=98768</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>orders</code></td>
+              <td>주문 헤더 테이블입니다. 고객, 주문일, 우선순위, 상태성 필드를 담습니다.</td>
+              <td class="num">1,500,000</td>
+              <td class="num">9</td>
+              <td><code>o_orderkey</code>, <code>o_custkey</code>, <code>o_orderdate</code>, <code>o_orderpriority</code>, <code>o_shippriority</code>, <code>o_clerk</code></td>
+              <td><b>o_orderkey</b>=1; <b>o_custkey</b>=73100; <b>o_orderdate</b>=1995-04-19; <b>o_orderpriority</b>=4-NOT SPECIFIED</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>partsupp</code></td>
+              <td>부품-공급자 관계와 공급 비용, 재고량을 담은 연결 테이블입니다.</td>
+              <td class="num">800,000</td>
+              <td class="num">5</td>
+              <td><code>ps_partkey</code>, <code>ps_suppkey</code>, <code>ps_supplycost</code>, <code>ps_availqty</code>, <code>ps_comment</code></td>
+              <td><b>ps_partkey</b>=1; <b>ps_suppkey</b>=2; <b>ps_supplycost</b>=400.75; <b>ps_availqty</b>=1111</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>part</code></td>
+              <td>상품/부품 마스터입니다.</td>
+              <td class="num">200,000</td>
+              <td class="num">9</td>
+              <td><code>p_partkey</code>, <code>p_type</code>, <code>p_size</code>, <code>p_brand</code>, <code>p_name</code>, <code>p_container</code></td>
+              <td><b>p_partkey</b>=1; <b>p_type</b>=LARGE PLATED TIN; <b>p_size</b>=31; <b>p_brand</b>=Brand#43</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>customer</code></td>
+              <td>고객, 국가, 시장 세그먼트, 주소, 전화번호를 담은 고객 차원입니다.</td>
+              <td class="num">150,000</td>
+              <td class="num">8</td>
+              <td><code>c_custkey</code>, <code>c_nationkey</code>, <code>c_mktsegment</code>, <code>c_name</code>, <code>c_address</code>, <code>c_phone</code></td>
+              <td><b>c_custkey</b>=1; <b>c_nationkey</b>=8; <b>c_mktsegment</b>=BUILDING; <b>c_name</b>=Customer#000000001</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>supplier</code></td>
+              <td>공급자와 국가, 주소 정보를 담은 공급/거래처 차원입니다.</td>
+              <td class="num">10,000</td>
+              <td class="num">7</td>
+              <td><code>s_suppkey</code>, <code>s_nationkey</code>, <code>s_comment</code>, <code>s_name</code>, <code>s_address</code>, <code>s_phone</code></td>
+              <td><b>s_suppkey</b>=1; <b>s_nationkey</b>=13; <b>s_comment</b>=blithely final pearls are. instructions thra; <b>s_name</b>=Supplier#000000001</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>nation</code></td>
+              <td>국가와 지역 키를 담은 지리 차원입니다.</td>
+              <td class="num">25</td>
+              <td class="num">4</td>
+              <td><code>n_nationkey</code>, <code>n_regionkey</code>, <code>n_name</code>, <code>n_comment</code></td>
+              <td><b>n_nationkey</b>=0; <b>n_regionkey</b>=0; <b>n_name</b>=ALGERIA; <b>n_comment</b>=slyly express pinto beans cajole idly. deposits use blithely unusual packag...</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>region</code></td>
+              <td>상위 지역 차원입니다.</td>
+              <td class="num">5</td>
+              <td class="num">3</td>
+              <td><code>r_regionkey</code>, <code>r_name</code>, <code>r_comment</code></td>
+              <td><b>r_regionkey</b>=0; <b>r_name</b>=AFRICA; <b>r_comment</b>=asymptotes sublate after the r</td>
+            </tr>
+            </tbody>
+              </table>
+            </section>
+            
+            <section class="db-card" id="train.bike_share_1">
+              <div class="card-title">
+                <div>
+                  <span class="rank-badge">6</span>
+                  <h2>train.bike_share_1</h2>
+                </div>
+                <span class="tag">설비 상태</span>
+              </div>
+              <p>스테이션, 시간대별 상태, 이용 이력, 날씨가 있는 운영 데이터입니다. 송변전/배전 설비의 상태 이력, 가동 현황, 시간대별 이벤트 질의를 가장 잘 대체합니다.</p>
+              <div class="question-box">
+                <strong>KEPCO 질문 유형</strong>
+                <ul>
+                  <li>설비별 시간대 상태 조회</li><li>설비 가동/여유/부하 현황 집계</li><li>설비 위치와 운영 이벤트 조인</li><li>날씨 또는 시간대별 운영 패턴 분석</li>
+                </ul>
+              </div>
+              <div class="metrics">
+                <div><strong>4</strong><small>tables</small></div>
+                <div><strong>46</strong><small>columns</small></div>
+                <div><strong>72,647,070</strong><small>rows</small></div>
+                <div><strong>0 B</strong><small>sqlite size</small></div>
+                <div><strong>113</strong><small>questions</small></div>
+              </div>
+              <div class="rowbar-label">
+                <strong>DB 전체 row 수 상대 규모</strong>
+                <span>Top 10 중 가장 큰 DB를 100%로 둔 비교입니다.</span>
+              </div>
+              <div class="rowbar"><div style="width:100.00%"></div></div>
+              <table>
+                <thead>
+                  <tr><th>Table</th><th>테이블 역할</th><th>Rows</th><th>Cols</th><th>주요 컬럼</th><th>실제 샘플 값</th></tr>
+                </thead>
+                <tbody>
+            <tr>
+              <td><code>status</code></td>
+              <td>스테이션별 특정 시각의 사용 가능 자전거/도크 수 상태 이력입니다. 설비별 부하/상태 이력에 가장 가깝습니다.</td>
+              <td class="num">71,984,434</td>
+              <td class="num">4</td>
+              <td><code>station_id</code>, <code>bikes_available</code>, <code>docks_available</code>, <code>time</code></td>
+              <td><b>station_id</b>=2; <b>bikes_available</b>=2; <b>docks_available</b>=25; <b>time</b>=2013/08/29 12:06:01</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>trip</code></td>
+              <td>이용 이벤트 이력입니다. 시작/종료 스테이션과 시각, 지속시간을 담습니다.</td>
+              <td class="num">658,901</td>
+              <td class="num">11</td>
+              <td><code>id</code>, <code>duration</code>, <code>start_date</code>, <code>start_station_name</code>, <code>start_station_id</code>, <code>end_date</code></td>
+              <td><b>id</b>=4069; <b>duration</b>=174; <b>start_date</b>=8/29/2013 9:08; <b>start_station_name</b>=2nd at South Park</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>weather</code></td>
+              <td>날짜별 기상 정보입니다. 설비 운영 상태와 외부 요인을 연결할 수 있습니다.</td>
+              <td class="num">3,665</td>
+              <td class="num">24</td>
+              <td><code>date</code>, <code>max_temperature_f</code>, <code>mean_temperature_f</code>, <code>min_temperature_f</code>, <code>max_dew_point_f</code>, <code>mean_dew_point_f</code></td>
+              <td><b>date</b>=8/29/2013; <b>max_temperature_f</b>=74; <b>mean_temperature_f</b>=68; <b>min_temperature_f</b>=61</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>station</code></td>
+              <td>스테이션 ID, 이름, 좌표, 도크 수, 도시를 담은 설비 마스터입니다.</td>
+              <td class="num">70</td>
+              <td class="num">7</td>
+              <td><code>id</code>, <code>name</code>, <code>lat</code>, <code>long</code>, <code>dock_count</code>, <code>city</code></td>
+              <td><b>id</b>=2; <b>name</b>=San Jose Diridon Caltrain Station; <b>lat</b>=37.329732; <b>long</b>=-121.90178200000001</td>
+            </tr>
+            </tbody>
+              </table>
+            </section>
+            
+            <section class="db-card" id="train.works_cycles">
+              <div class="card-title">
+                <div>
+                  <span class="rank-badge">7</span>
+                  <h2>train.works_cycles</h2>
+                </div>
+                <span class="tag">복잡 실무 DB</span>
+              </div>
+              <p>AdventureWorks 계열의 ERP형 DB로 주문, 생산, 작업지시, 재고, 거래, 고객, 주소, 조직 정보가 매우 복잡하게 연결되어 있습니다. 실제 사내 업무 DB 수준의 복잡한 조인 평가에 적합합니다.</p>
+              <div class="question-box">
+                <strong>KEPCO 질문 유형</strong>
+                <ul>
+                  <li>작업지시/설비/자재/거래 이력 조인</li><li>고객·주소·영업조직·주문 연결 질의</li><li>복잡한 PK/FK 경로 탐색</li><li>실무형 다중 CTE 및 집계</li>
+                </ul>
+              </div>
+              <div class="metrics">
+                <div><strong>65</strong><small>tables</small></div>
+                <div><strong>455</strong><small>columns</small></div>
+                <div><strong>719,435</strong><small>rows</small></div>
+                <div><strong>0 B</strong><small>sqlite size</small></div>
+                <div><strong>474</strong><small>questions</small></div>
+              </div>
+              <div class="rowbar-label">
+                <strong>DB 전체 row 수 상대 규모</strong>
+                <span>Top 10 중 가장 큰 DB를 100%로 둔 비교입니다.</span>
+              </div>
+              <div class="rowbar"><div style="width:0.99%"></div></div>
+              <table>
+                <thead>
+                  <tr><th>Table</th><th>테이블 역할</th><th>Rows</th><th>Cols</th><th>주요 컬럼</th><th>실제 샘플 값</th></tr>
+                </thead>
+                <tbody>
+            <tr>
+              <td><code>SalesOrderDetail</code></td>
+              <td>판매 주문 상세입니다. 주문, 상품, 수량, 단가, 할인 등이 연결됩니다.</td>
+              <td class="num">121,317</td>
+              <td class="num">11</td>
+              <td><code>SalesOrderDetailID</code>, <code>SalesOrderID</code>, <code>ProductID</code>, <code>SpecialOfferID</code>, <code>CarrierTrackingNumber</code>, <code>OrderQty</code></td>
+              <td><b>SalesOrderDetailID</b>=1; <b>SalesOrderID</b>=43659; <b>ProductID</b>=776; <b>SpecialOfferID</b>=1</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>TransactionHistory</code></td>
+              <td>상품별 거래 이력입니다. 자재 이동이나 설비 작업 이력과 유사하게 쓸 수 있습니다.</td>
+              <td class="num">113,443</td>
+              <td class="num">9</td>
+              <td><code>TransactionID</code>, <code>ProductID</code>, <code>ReferenceOrderID</code>, <code>ReferenceOrderLineID</code>, <code>TransactionDate</code>, <code>TransactionType</code></td>
+              <td><b>TransactionID</b>=100000; <b>ProductID</b>=784; <b>ReferenceOrderID</b>=41590; <b>ReferenceOrderLineID</b>=0</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>TransactionHistoryArchive</code></td>
+              <td>거래 이력 아카이브입니다.</td>
+              <td class="num">89,253</td>
+              <td class="num">9</td>
+              <td><code>TransactionID</code>, <code>ProductID</code>, <code>ReferenceOrderID</code>, <code>ReferenceOrderLineID</code>, <code>TransactionDate</code>, <code>TransactionType</code></td>
+              <td><b>TransactionID</b>=1; <b>ProductID</b>=1; <b>ReferenceOrderID</b>=1; <b>ReferenceOrderLineID</b>=1</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>WorkOrder</code></td>
+              <td>생산 작업지시 테이블입니다. 작업량, 재고량, 폐기량 등을 담아 배전 작업 지시와 유사한 패턴을 만들 수 있습니다.</td>
+              <td class="num">72,591</td>
+              <td class="num">10</td>
+              <td><code>WorkOrderID</code>, <code>ProductID</code>, <code>ScrapReasonID</code>, <code>OrderQty</code>, <code>StockedQty</code>, <code>ScrappedQty</code></td>
+              <td><b>WorkOrderID</b>=1; <b>ProductID</b>=722; <b>ScrapReasonID</b>=NULL; <b>OrderQty</b>=8</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>WorkOrderRouting</code></td>
+              <td>작업지시별 공정 순서와 작업 위치, 예정/실제 시각을 담은 운영 이력입니다.</td>
+              <td class="num">67,131</td>
+              <td class="num">12</td>
+              <td><code>WorkOrderID</code>, <code>ProductID</code>, <code>OperationSequence</code>, <code>LocationID</code>, <code>ScheduledStartDate</code>, <code>ScheduledEndDate</code></td>
+              <td><b>WorkOrderID</b>=13; <b>ProductID</b>=747; <b>OperationSequence</b>=1; <b>LocationID</b>=10</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>SalesOrderHeader</code></td>
+              <td>판매 주문 헤더입니다. 고객, 영업사원, 권역, 청구/배송 주소와 주문 상태를 담습니다.</td>
+              <td class="num">31,465</td>
+              <td class="num">26</td>
+              <td><code>SalesOrderID</code>, <code>CustomerID</code>, <code>SalesPersonID</code>, <code>TerritoryID</code>, <code>BillToAddressID</code>, <code>ShipToAddressID</code></td>
+              <td><b>SalesOrderID</b>=43659; <b>CustomerID</b>=29825; <b>SalesPersonID</b>=279; <b>TerritoryID</b>=5</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>SalesOrderHeaderSalesReason</code></td>
+              <td>테이블명과 컬럼 기준으로 도메인 역할을 해석해야 하는 테이블입니다.</td>
+              <td class="num">27,647</td>
+              <td class="num">3</td>
+              <td><code>SalesOrderID</code>, <code>SalesReasonID</code>, <code>ModifiedDate</code></td>
+              <td><b>SalesOrderID</b>=43697; <b>SalesReasonID</b>=5; <b>ModifiedDate</b>=2011-05-31 00:00:00.0</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>BusinessEntity</code></td>
+              <td>조직/사람/거래처의 공통 엔티티 테이블입니다.</td>
+              <td class="num">20,777</td>
+              <td class="num">3</td>
+              <td><code>BusinessEntityID</code>, <code>rowguid</code>, <code>ModifiedDate</code></td>
+              <td><b>BusinessEntityID</b>=1; <b>rowguid</b>=0C7D8F81-D7B1-4CF0-9C0A-4CD8B6B50087; <b>ModifiedDate</b>=2017-12-13 13:20:24.0</td>
+            </tr>
+            </tbody>
+              </table>
+            </section>
+            
+            <section class="db-card" id="dev.financial">
+              <div class="card-title">
+                <div>
+                  <span class="rank-badge">8</span>
+                  <h2>dev.financial</h2>
+                </div>
+                <span class="tag">거래/납부</span>
+              </div>
+              <p>은행 고객, 계좌, 거래, 카드, 대출, 지구 정보가 있는 금융 DB입니다. 고객별 납부/수납, 거래 금액, 미납 또는 대출 상태 같은 요금·수납 도메인 질문과 유사합니다.</p>
+              <div class="question-box">
+                <strong>KEPCO 질문 유형</strong>
+                <ul>
+                  <li>고객/계좌별 납부 금액 집계</li><li>기간별 거래 내역 조회</li><li>지역별 고객/거래 분포</li><li>금액, 상태, 빈도 기반 필터링</li>
+                </ul>
+              </div>
+              <div class="metrics">
+                <div><strong>8</strong><small>tables</small></div>
+                <div><strong>55</strong><small>columns</small></div>
+                <div><strong>1,079,680</strong><small>rows</small></div>
+                <div><strong>0 B</strong><small>sqlite size</small></div>
+                <div><strong>106</strong><small>questions</small></div>
+              </div>
+              <div class="rowbar-label">
+                <strong>DB 전체 row 수 상대 규모</strong>
+                <span>Top 10 중 가장 큰 DB를 100%로 둔 비교입니다.</span>
+              </div>
+              <div class="rowbar"><div style="width:1.49%"></div></div>
+              <table>
+                <thead>
+                  <tr><th>Table</th><th>테이블 역할</th><th>Rows</th><th>Cols</th><th>주요 컬럼</th><th>실제 샘플 값</th></tr>
+                </thead>
+                <tbody>
+            <tr>
+              <td><code>trans</code></td>
+              <td>계좌 거래 내역 fact 테이블입니다. 날짜, 유형, 금액, 잔액이 있어 납부/수납 내역과 유사합니다.</td>
+              <td class="num">1,056,320</td>
+              <td class="num">10</td>
+              <td><code>trans_id</code>, <code>account_id</code>, <code>date</code>, <code>type</code>, <code>operation</code>, <code>amount</code></td>
+              <td><b>trans_id</b>=1; <b>account_id</b>=1; <b>date</b>=1995-03-24; <b>type</b>=PRIJEM</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>order</code></td>
+              <td>정기 이체 주문 정보입니다.</td>
+              <td class="num">6,471</td>
+              <td class="num">6</td>
+              <td><code>order_id</code>, <code>account_id</code>, <code>bank_to</code>, <code>account_to</code>, <code>amount</code>, <code>k_symbol</code></td>
+              <td><b>order_id</b>=29401; <b>account_id</b>=1; <b>bank_to</b>=YZ; <b>account_to</b>=87144583</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>client</code></td>
+              <td>고객 마스터입니다. 고객, 지역, 성별, 생년월일을 담습니다.</td>
+              <td class="num">5,369</td>
+              <td class="num">4</td>
+              <td><code>client_id</code>, <code>district_id</code>, <code>gender</code>, <code>birth_date</code></td>
+              <td><b>client_id</b>=1; <b>district_id</b>=18; <b>gender</b>=F; <b>birth_date</b>=1970-12-13</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>disp</code></td>
+              <td>고객과 계좌의 관계를 나타내는 연결 테이블입니다.</td>
+              <td class="num">5,369</td>
+              <td class="num">4</td>
+              <td><code>disp_id</code>, <code>client_id</code>, <code>account_id</code>, <code>type</code></td>
+              <td><b>disp_id</b>=1; <b>client_id</b>=1; <b>account_id</b>=1; <b>type</b>=OWNER</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>account</code></td>
+              <td>계좌 마스터입니다. 계좌, 지역, 거래 빈도, 개설일을 담습니다.</td>
+              <td class="num">4,500</td>
+              <td class="num">4</td>
+              <td><code>account_id</code>, <code>district_id</code>, <code>frequency</code>, <code>date</code></td>
+              <td><b>account_id</b>=1; <b>district_id</b>=18; <b>frequency</b>=POPLATEK MESICNE; <b>date</b>=1995-03-24</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>card</code></td>
+              <td>카드 발급 정보입니다.</td>
+              <td class="num">892</td>
+              <td class="num">4</td>
+              <td><code>card_id</code>, <code>disp_id</code>, <code>type</code>, <code>issued</code></td>
+              <td><b>card_id</b>=1; <b>disp_id</b>=9; <b>type</b>=gold; <b>issued</b>=1998-10-16</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>loan</code></td>
+              <td>대출 금액, 기간, 상환액, 상태를 담은 금액성 계약 테이블입니다.</td>
+              <td class="num">682</td>
+              <td class="num">7</td>
+              <td><code>loan_id</code>, <code>account_id</code>, <code>date</code>, <code>amount</code>, <code>duration</code>, <code>payments</code></td>
+              <td><b>loan_id</b>=4959; <b>account_id</b>=2; <b>date</b>=1994-01-05; <b>amount</b>=80952</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>district</code></td>
+              <td>지역별 인구·경제 통계를 담은 지역 차원입니다.</td>
+              <td class="num">77</td>
+              <td class="num">16</td>
+              <td><code>district_id</code>, <code>A2</code>, <code>A3</code>, <code>A4</code>, <code>A5</code>, <code>A6</code></td>
+              <td><b>district_id</b>=1; <b>A2</b>=Hl.m. Praha; <b>A3</b>=Prague; <b>A4</b>=1204953</td>
+            </tr>
+            </tbody>
+              </table>
+            </section>
+            
+            <section class="db-card" id="train.car_retails">
+              <div class="card-title">
+                <div>
+                  <span class="rank-badge">9</span>
+                  <h2>train.car_retails</h2>
+                </div>
+                <span class="tag">고객/결제</span>
+              </div>
+              <p>고객, 주문, 주문상세, 결제, 상품, 사무소, 직원이 연결된 영업관리 DB입니다. 고객 청구, 납부, 사업소, 담당자, 상품/요금 항목 관계를 평가하기 좋습니다.</p>
+              <div class="question-box">
+                <strong>KEPCO 질문 유형</strong>
+                <ul>
+                  <li>고객별 주문/결제 내역</li><li>사업소 또는 담당자별 실적</li><li>상품/요금 항목별 금액 집계</li><li>주문 상태와 결제일 기준 조회</li>
+                </ul>
+              </div>
+              <div class="metrics">
+                <div><strong>8</strong><small>tables</small></div>
+                <div><strong>59</strong><small>columns</small></div>
+                <div><strong>3,864</strong><small>rows</small></div>
+                <div><strong>0 B</strong><small>sqlite size</small></div>
+                <div><strong>126</strong><small>questions</small></div>
+              </div>
+              <div class="rowbar-label">
+                <strong>DB 전체 row 수 상대 규모</strong>
+                <span>Top 10 중 가장 큰 DB를 100%로 둔 비교입니다.</span>
+              </div>
+              <div class="rowbar"><div style="width:0.01%"></div></div>
+              <table>
+                <thead>
+                  <tr><th>Table</th><th>테이블 역할</th><th>Rows</th><th>Cols</th><th>주요 컬럼</th><th>실제 샘플 값</th></tr>
+                </thead>
+                <tbody>
+            <tr>
+              <td><code>orderdetails</code></td>
+              <td>주문 상세입니다. 상품, 수량, 개별 가격, 라인 번호를 담습니다.</td>
+              <td class="num">2,996</td>
+              <td class="num">5</td>
+              <td><code>orderNumber</code>, <code>productCode</code>, <code>quantityOrdered</code>, <code>priceEach</code>, <code>orderLineNumber</code></td>
+              <td><b>orderNumber</b>=10100; <b>productCode</b>=S18_1749; <b>quantityOrdered</b>=30; <b>priceEach</b>=136.0</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>orders</code></td>
+              <td>고객 주문 헤더입니다. 주문일, 필요일, 배송일, 상태를 담습니다.</td>
+              <td class="num">326</td>
+              <td class="num">7</td>
+              <td><code>orderNumber</code>, <code>customerNumber</code>, <code>orderDate</code>, <code>requiredDate</code>, <code>shippedDate</code>, <code>status</code></td>
+              <td><b>orderNumber</b>=10100; <b>customerNumber</b>=363; <b>orderDate</b>=2003-01-06; <b>requiredDate</b>=2003-01-13</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>payments</code></td>
+              <td>고객 결제 내역입니다. 결제일과 금액이 있어 요금 납부와 유사합니다.</td>
+              <td class="num">273</td>
+              <td class="num">4</td>
+              <td><code>customerNumber</code>, <code>checkNumber</code>, <code>paymentDate</code>, <code>amount</code></td>
+              <td><b>customerNumber</b>=103; <b>checkNumber</b>=HQ336336; <b>paymentDate</b>=2004-10-19; <b>amount</b>=6066.78</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>customers</code></td>
+              <td>고객 마스터입니다. 고객명, 연락처, 담당 직원, 신용한도 등을 담습니다.</td>
+              <td class="num">122</td>
+              <td class="num">13</td>
+              <td><code>customerNumber</code>, <code>salesRepEmployeeNumber</code>, <code>customerName</code>, <code>contactLastName</code>, <code>contactFirstName</code>, <code>phone</code></td>
+              <td><b>customerNumber</b>=103; <b>salesRepEmployeeNumber</b>=1370; <b>customerName</b>=Atelier graphique; <b>contactLastName</b>=Schmitt</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>products</code></td>
+              <td>상품 마스터입니다. 상품 라인, 이름, 설명, 재고, 권장 가격을 담습니다.</td>
+              <td class="num">110</td>
+              <td class="num">9</td>
+              <td><code>productCode</code>, <code>productLine</code>, <code>productName</code>, <code>productScale</code>, <code>productVendor</code>, <code>productDescription</code></td>
+              <td><b>productCode</b>=S10_1678; <b>productLine</b>=Motorcycles; <b>productName</b>=1969 Harley Davidson Ultimate Chopper; <b>productScale</b>=1:10</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>employees</code></td>
+              <td>직원 및 보고 라인 테이블입니다.</td>
+              <td class="num">23</td>
+              <td class="num">8</td>
+              <td><code>employeeNumber</code>, <code>officeCode</code>, <code>reportsTo</code>, <code>lastName</code>, <code>firstName</code>, <code>extension</code></td>
+              <td><b>employeeNumber</b>=1002; <b>officeCode</b>=1; <b>reportsTo</b>=NULL; <b>lastName</b>=Murphy</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>offices</code></td>
+              <td>사업소/지점 차원입니다. 도시, 전화, 주소, 지역 정보를 담습니다.</td>
+              <td class="num">7</td>
+              <td class="num">9</td>
+              <td><code>officeCode</code>, <code>city</code>, <code>phone</code>, <code>addressLine1</code>, <code>addressLine2</code>, <code>state</code></td>
+              <td><b>officeCode</b>=1; <b>city</b>=San Francisco; <b>phone</b>=+1 650 219 4782; <b>addressLine1</b>=100 Market Street</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>productlines</code></td>
+              <td>테이블명과 컬럼 기준으로 도메인 역할을 해석해야 하는 테이블입니다.</td>
+              <td class="num">7</td>
+              <td class="num">4</td>
+              <td><code>productLine</code>, <code>textDescription</code>, <code>htmlDescription</code>, <code>image</code></td>
+              <td><b>productLine</b>=Classic Cars; <b>textDescription</b>=Attention car enthusiasts: Make your wildest car ownership dreams come true...; <b>htmlDescription</b>=NULL; <b>image</b>=NULL</td>
+            </tr>
+            </tbody>
+              </table>
+            </section>
+            
+            <section class="db-card" id="train.synthea">
+              <div class="card-title">
+                <div>
+                  <span class="rank-badge">10</span>
+                  <h2>train.synthea</h2>
+                </div>
+                <span class="tag">이벤트/청구</span>
+              </div>
+              <p>환자, 방문, 관측값, 청구, 처방, 절차 이벤트가 있는 의료 시뮬레이션 DB입니다. 전력 도메인은 아니지만 고객 단위 이벤트 로그, 관측값, 청구 이력 구조가 계량/검침/요금 이력과 닮았습니다.</p>
+              <div class="question-box">
+                <strong>KEPCO 질문 유형</strong>
+                <ul>
+                  <li>고객 단위 이벤트 타임라인</li><li>관측값/계량값 코드별 조회</li><li>청구 기간과 이벤트 조인</li><li>상태·처치·이력 기반 필터링</li>
+                </ul>
+              </div>
+              <div class="metrics">
+                <div><strong>11</strong><small>tables</small></div>
+                <div><strong>85</strong><small>columns</small></div>
+                <div><strong>170,810</strong><small>rows</small></div>
+                <div><strong>0 B</strong><small>sqlite size</small></div>
+                <div><strong>185</strong><small>questions</small></div>
+              </div>
+              <div class="rowbar-label">
+                <strong>DB 전체 row 수 상대 규모</strong>
+                <span>Top 10 중 가장 큰 DB를 100%로 둔 비교입니다.</span>
+              </div>
+              <div class="rowbar"><div style="width:0.24%"></div></div>
+              <table>
+                <thead>
+                  <tr><th>Table</th><th>테이블 역할</th><th>Rows</th><th>Cols</th><th>주요 컬럼</th><th>실제 샘플 값</th></tr>
+                </thead>
+                <tbody>
+            <tr>
+              <td><code>observations</code></td>
+              <td>환자별 관측값 이력입니다. 검침값/계량값 코드별 이력 테이블처럼 볼 수 있습니다.</td>
+              <td class="num">78,899</td>
+              <td class="num">7</td>
+              <td><code>PATIENT</code>, <code>ENCOUNTER</code>, <code>DATE</code>, <code>CODE</code>, <code>DESCRIPTION</code>, <code>VALUE</code></td>
+              <td><b>PATIENT</b>=71949668-1c2e-43ae-ab0a-64654608defb; <b>ENCOUNTER</b>=5114a5b4-64b8-47b2-82a6-0ce24aae0943; <b>DATE</b>=2008-03-11; <b>CODE</b>=8302-2</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>encounters</code></td>
+              <td>방문/접점 이벤트입니다. 고객 서비스 접점 또는 현장 방문 이벤트와 유사합니다.</td>
+              <td class="num">20,524</td>
+              <td class="num">7</td>
+              <td><code>ID</code>, <code>PATIENT</code>, <code>DATE</code>, <code>CODE</code>, <code>DESCRIPTION</code>, <code>REASONCODE</code></td>
+              <td><b>ID</b>=5114a5b4-64b8-47b2-82a6-0ce24aae0943; <b>PATIENT</b>=71949668-1c2e-43ae-ab0a-64654608defb; <b>DATE</b>=2008-03-11; <b>CODE</b>=185349003</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>claims</code></td>
+              <td>청구 이력입니다. 청구 기간, 조직, 진단/사유 코드가 연결됩니다.</td>
+              <td class="num">20,523</td>
+              <td class="num">7</td>
+              <td><code>ID</code>, <code>PATIENT</code>, <code>ENCOUNTER</code>, <code>BILLABLEPERIOD</code>, <code>ORGANIZATION</code>, <code>DIAGNOSIS</code></td>
+              <td><b>ID</b>=1a9e880e-27a1-4465-8adc-222b1996a14a; <b>PATIENT</b>=71949668-1c2e-43ae-ab0a-64654608defb; <b>ENCOUNTER</b>=71949668-1c2e-43ae-ab0a-64654608defb; <b>BILLABLEPERIOD</b>=2008-03-11</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>immunizations</code></td>
+              <td>이벤트성 기록 테이블입니다.</td>
+              <td class="num">13,189</td>
+              <td class="num">5</td>
+              <td><code>DATE</code>, <code>PATIENT</code>, <code>ENCOUNTER</code>, <code>CODE</code>, <code>DESCRIPTION</code></td>
+              <td><b>DATE</b>=2008-03-11; <b>PATIENT</b>=71949668-1c2e-43ae-ab0a-64654608defb; <b>ENCOUNTER</b>=5114a5b4-64b8-47b2-82a6-0ce24aae0943; <b>CODE</b>=140</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>careplans</code></td>
+              <td>계획/관리 이력입니다.</td>
+              <td class="num">12,125</td>
+              <td class="num">9</td>
+              <td><code>PATIENT</code>, <code>ENCOUNTER</code>, <code>ID</code>, <code>START</code>, <code>STOP</code>, <code>CODE</code></td>
+              <td><b>PATIENT</b>=71949668-1c2e-43ae-ab0a-64654608defb; <b>ENCOUNTER</b>=4d451e22-a354-40c9-8b33-b6126158666d; <b>ID</b>=e031962d-d13d-4ede-a449-040417d5e4fb; <b>START</b>=2009-01-11</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>procedures</code></td>
+              <td>처치/작업 이벤트입니다. 배전 작업 또는 현장 조치 이력 패턴을 만들 수 있습니다.</td>
+              <td class="num">10,184</td>
+              <td class="num">7</td>
+              <td><code>PATIENT</code>, <code>ENCOUNTER</code>, <code>DATE</code>, <code>CODE</code>, <code>DESCRIPTION</code>, <code>REASONCODE</code></td>
+              <td><b>PATIENT</b>=71949668-1c2e-43ae-ab0a-64654608defb; <b>ENCOUNTER</b>=6f2e3935-b203-493e-a9c0-f23e847b9798; <b>DATE</b>=2013-02-09; <b>CODE</b>=23426006</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>conditions</code></td>
+              <td>상태/진단 이력입니다. 설비 상태 또는 고객 상태 코드 이력과 유사하게 활용할 수 있습니다.</td>
+              <td class="num">7,040</td>
+              <td class="num">6</td>
+              <td><code>PATIENT</code>, <code>ENCOUNTER</code>, <code>DESCRIPTION</code>, <code>START</code>, <code>STOP</code>, <code>CODE</code></td>
+              <td><b>PATIENT</b>=71949668-1c2e-43ae-ab0a-64654608defb; <b>ENCOUNTER</b>=4d451e22-a354-40c9-8b33-b6126158666d; <b>DESCRIPTION</b>=Acute bronchitis (disorder); <b>START</b>=2009-01-08</td>
+            </tr>
+            
+
+            <tr>
+              <td><code>medications</code></td>
+              <td>처방 이력입니다. 서비스/조치 항목 이력의 대체재입니다.</td>
+              <td class="num">6,048</td>
+              <td class="num">8</td>
+              <td><code>START</code>, <code>PATIENT</code>, <code>ENCOUNTER</code>, <code>CODE</code>, <code>STOP</code>, <code>DESCRIPTION</code></td>
+              <td><b>START</b>=1988-09-05; <b>PATIENT</b>=71949668-1c2e-43ae-ab0a-64654608defb; <b>ENCOUNTER</b>=5114a5b4-64b8-47b2-82a6-0ce24aae0943; <b>CODE</b>=834060</td>
+            </tr>
+            </tbody>
+              </table>
+            </section>
+            
+  </main>
+</body>
+</html>
