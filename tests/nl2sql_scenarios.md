@@ -2,6 +2,13 @@
 
 한전 OPEN API 기반 SQLite DB (`kepco.db`) 대상 자연어 → SQL 변환 테스트
 
+> **스키마 기준**: 지역명은 `metro_code`/`city_code` 코드 컬럼으로 저장.
+> 지역명 표시 시 `common_code` JOIN 필요. city_code는 광역시도 내 고유값이므로
+> city JOIN에는 반드시 `AND c.upper_code = <table>.metro_code` 조건을 추가.
+>
+> `metro_code` 주요값: 11=서울, 21=부산, 22=대구, 23=인천, 24=광주, 25=대전, 26=울산, 31=경기도, 32=강원, 33=충북, 34=충남, 35=전북, 36=전남, 37=경북, 38=경남, 39=제주, 41=세종.
+> `biz_code` 주요값: C=제조업, D=전기·가스, G=도소매, I=숙박음식, KEPCO01=주택용.
+
 ---
 
 ## 단일 테이블 / 단순 쿼리
@@ -12,11 +19,13 @@
 테이블: contract_type
 ```
 ```sql
-SELECT metro, city, contract_type, SUM(power_usage) AS total_usage
-FROM contract_type
-WHERE year = '2023' AND month = '01'
-  AND metro = '서울특별시' AND contract_type = '주택용'
-GROUP BY metro, city, contract_type;
+SELECT m.code_name AS metro, c.code_name AS city, ct.contract_type, SUM(ct.power_usage) AS total_usage
+FROM contract_type ct
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ct.metro_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ct.city_code AND c.upper_code = ct.metro_code
+WHERE ct.year = '2023' AND ct.month = '01'
+  AND ct.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시') AND ct.contract_type = '주택용'
+GROUP BY ct.metro_code, ct.city_code, ct.contract_type;
 ```
 
 ---
@@ -27,24 +36,25 @@ GROUP BY metro, city, contract_type;
 테이블: contract_type
 ```
 ```sql
-SELECT contract_type, SUM(bill) AS total_bill
-FROM contract_type
-WHERE year = '2023' AND month = '12' AND metro = '경기도'
-GROUP BY contract_type
+SELECT ct.contract_type, SUM(ct.bill) AS total_bill
+FROM contract_type ct
+WHERE ct.year = '2023' AND ct.month = '12' AND ct.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='경기도')
+GROUP BY ct.contract_type
 ORDER BY total_bill DESC;
 ```
 
 ---
 
-### S-03. 전국 월별 평균 판매단가 추이
+### S-03. 전국 월별 가중평균 판매단가 추이
 ```
 자연어: 2023년 월별 전국 평균 판매단가 추이 알려줘
 테이블: contract_type
 ```
 ```sql
-SELECT month, AVG(unit_cost) AS avg_unit_cost
+SELECT month,
+  ROUND(SUM(bill) * 1.0 / NULLIF(SUM(power_usage), 0), 4) AS avg_unit_cost
 FROM contract_type
-WHERE year = '2023' AND metro = '전체'
+WHERE year = '2023'
 GROUP BY month
 ORDER BY month;
 ```
@@ -57,10 +67,12 @@ ORDER BY month;
 테이블: industry_type
 ```
 ```sql
-SELECT metro, city, SUM(power_usage) AS total_usage
-FROM industry_type
-WHERE year = '2023' AND biz LIKE '%제조업%'
-GROUP BY metro, city
+SELECT m.code_name AS metro, c.code_name AS city, SUM(it.power_usage) AS total_usage
+FROM industry_type it
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = it.metro_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = it.city_code AND c.upper_code = it.metro_code
+WHERE it.year = '2023' AND it.biz_code = (SELECT code FROM common_code WHERE code_type='bizCd' AND code_name='제조업')
+GROUP BY it.metro_code, it.city_code
 ORDER BY total_usage DESC
 LIMIT 5;
 ```
@@ -73,10 +85,11 @@ LIMIT 5;
 테이블: ev_charge
 ```
 ```sql
-SELECT city, SUM(rapid_count) AS rapid_total
-FROM ev_charge
-WHERE metro = '서울특별시'
-GROUP BY city
+SELECT c.code_name AS city, SUM(ec.rapid_count) AS rapid_total
+FROM ev_charge ec
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ec.city_code AND c.upper_code = ec.metro_code
+WHERE ec.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
+GROUP BY ec.city_code
 ORDER BY rapid_total DESC
 LIMIT 5;
 ```
@@ -89,10 +102,12 @@ LIMIT 5;
 테이블: welfare_discount
 ```
 ```sql
-SELECT metro, city, SUM(welfare_count) AS total_count
-FROM welfare_discount
-WHERE year = '2023' AND welfare_type = '기초수급자'
-GROUP BY metro, city
+SELECT m.code_name AS metro, c.code_name AS city, SUM(wd.welfare_count) AS total_count
+FROM welfare_discount wd
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = wd.metro_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = wd.city_code AND c.upper_code = wd.metro_code
+WHERE wd.year = '2023' AND wd.welfare_type = '기초수급자'
+GROUP BY wd.metro_code, wd.city_code
 ORDER BY total_count DESC
 LIMIT 10;
 ```
@@ -105,10 +120,11 @@ LIMIT 10;
 테이블: billing_type
 ```
 ```sql
-SELECT city, SUM(bill_count) AS mobile_count
-FROM billing_type
-WHERE year = '2023' AND metro = '서울특별시' AND bill_type = '모바일'
-GROUP BY city
+SELECT c.code_name AS city, SUM(bt.bill_count) AS mobile_count
+FROM billing_type bt
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = bt.city_code AND c.upper_code = bt.metro_code
+WHERE bt.year = '2023' AND bt.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시') AND bt.bill_type = '모바일'
+GROUP BY bt.city_code
 ORDER BY mobile_count DESC;
 ```
 
@@ -116,14 +132,17 @@ ORDER BY mobile_count DESC;
 
 ### S-08. 신재생에너지 용량 조회
 ```
-자연어: 2023년 태양광 설치 용량이 가장 큰 시군구 TOP 10
+자연어: 2024년 태양광 설치 용량이 가장 큰 시군구 TOP 10
 테이블: renew_energy
+비고: renew_energy는 2024년 데이터만 존재
 ```
 ```sql
-SELECT metro, city, SUM(capacity) AS total_capacity
-FROM renew_energy
-WHERE year = '2023' AND gen_source = '태양광'
-GROUP BY metro, city
+SELECT m.code_name AS metro, c.code_name AS city, SUM(re.capacity) AS total_capacity
+FROM renew_energy re
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = re.metro_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = re.city_code AND c.upper_code = re.metro_code
+WHERE re.year = '2024' AND re.gen_source = '태양광'
+GROUP BY re.metro_code, re.city_code
 ORDER BY total_capacity DESC
 LIMIT 10;
 ```
@@ -136,11 +155,12 @@ LIMIT 10;
 테이블: house_avg
 ```
 ```sql
-SELECT month, metro, AVG(power_usage) AS avg_usage
-FROM house_avg
-WHERE year = '2023' AND month IN ('07', '08') AND metro = '서울특별시'
-GROUP BY month, metro
-ORDER BY month;
+SELECT ht.month, m.code_name AS metro, AVG(ht.power_usage) AS avg_usage
+FROM house_avg ht
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ht.metro_code
+WHERE ht.year = '2023' AND ht.month IN ('07', '08') AND ht.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
+GROUP BY ht.month, ht.metro_code
+ORDER BY ht.month;
 ```
 
 ---
@@ -151,10 +171,12 @@ ORDER BY month;
 테이블: industry_cust_change
 ```
 ```sql
-SELECT metro, city, SUM(new_count) AS total_new
-FROM industry_cust_change
-WHERE year = '2023' AND biz LIKE '%제조업%'
-GROUP BY metro, city
+SELECT m.code_name AS metro, c.code_name AS city, SUM(ic.new_count) AS total_new
+FROM industry_cust_change ic
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ic.metro_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ic.city_code AND c.upper_code = ic.metro_code
+WHERE ic.year = '2023' AND ic.biz_code = (SELECT code FROM common_code WHERE code_type='bizCd' AND code_name='제조업')
+GROUP BY ic.metro_code, ic.city_code
 ORDER BY total_new DESC
 LIMIT 10;
 ```
@@ -177,10 +199,10 @@ SELECT
   ROUND((SUM(b.power_usage) - SUM(a.power_usage)) * 100.0 / SUM(a.power_usage), 2) AS change_pct
 FROM contract_type a
 JOIN contract_type b
-  ON a.metro = b.metro AND a.city = b.city
+  ON a.metro_code = b.metro_code AND a.city_code = b.city_code
   AND a.month = b.month AND a.contract_type = b.contract_type
 WHERE a.year = '2022' AND b.year = '2023'
-  AND a.contract_type = '산업용' AND a.metro != '전체'
+  AND a.contract_type = '산업용'
 GROUP BY a.year, b.year;
 ```
 
@@ -201,7 +223,7 @@ SELECT
   END AS season,
   SUM(power_usage) AS total_usage
 FROM contract_type
-WHERE year = '2023' AND contract_type = '주택용' AND metro = '전체'
+WHERE year = '2023' AND contract_type = '주택용'
 GROUP BY season
 ORDER BY total_usage DESC;
 ```
@@ -219,7 +241,7 @@ SELECT
   SUM(welfare_count) AS count,
   ROUND(SUM(welfare_count) * 100.0 / SUM(SUM(welfare_count)) OVER (), 2) AS ratio_pct
 FROM welfare_discount
-WHERE year = '2023' AND metro = '서울특별시'
+WHERE year = '2023' AND metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
 GROUP BY welfare_type
 ORDER BY count DESC;
 ```
@@ -233,18 +255,20 @@ ORDER BY count DESC;
 ```
 ```sql
 WITH top_cities AS (
-  SELECT metro, city, SUM(power_usage) AS total
+  SELECT metro_code, city_code, SUM(power_usage) AS total
   FROM contract_type
-  WHERE year = '2023' AND metro != '전체'
-  GROUP BY metro, city
+  WHERE year = '2023'
+  GROUP BY metro_code, city_code
   ORDER BY total DESC
   LIMIT 5
 )
-SELECT ct.month, ct.metro, ct.city, SUM(ct.power_usage) AS monthly_usage
+SELECT ct.month, m.code_name AS metro, c.code_name AS city, SUM(ct.power_usage) AS monthly_usage
 FROM contract_type ct
-JOIN top_cities tc ON ct.metro = tc.metro AND ct.city = tc.city
+JOIN top_cities tc ON ct.metro_code = tc.metro_code AND ct.city_code = tc.city_code
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ct.metro_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ct.city_code AND c.upper_code = ct.metro_code
 WHERE ct.year = '2023'
-GROUP BY ct.month, ct.metro, ct.city
+GROUP BY ct.month, ct.metro_code, ct.city_code
 ORDER BY ct.month, monthly_usage DESC;
 ```
 
@@ -258,17 +282,26 @@ ORDER BY ct.month, monthly_usage DESC;
 테이블: contract_type + welfare_discount
 ```
 ```sql
-SELECT
-  ct.city,
-  SUM(ct.power_usage) AS power_usage,
-  SUM(wd.welfare_count) AS welfare_count
-FROM contract_type ct
-LEFT JOIN welfare_discount wd
-  ON ct.year = wd.year AND ct.month = wd.month
-  AND ct.metro = wd.metro AND ct.city = wd.city
-WHERE ct.year = '2023' AND ct.metro = '서울특별시'
-  AND ct.contract_type = '주택용'
-GROUP BY ct.city
+WITH ct_agg AS (
+  SELECT city_code, SUM(power_usage) AS power_usage
+  FROM contract_type
+  WHERE year = '2023'
+    AND metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
+    AND contract_type = '주택용'
+  GROUP BY city_code
+),
+wd_agg AS (
+  SELECT city_code, SUM(welfare_count) AS welfare_count
+  FROM welfare_discount
+  WHERE year = '2023'
+    AND metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
+  GROUP BY city_code
+)
+SELECT c.code_name AS city, ct_agg.power_usage, COALESCE(wd_agg.welfare_count, 0) AS welfare_count
+FROM ct_agg
+LEFT JOIN wd_agg ON ct_agg.city_code = wd_agg.city_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ct_agg.city_code
+  AND c.upper_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
 ORDER BY power_usage DESC;
 ```
 
@@ -281,12 +314,13 @@ ORDER BY power_usage DESC;
 ```
 ```sql
 SELECT
-  e.metro,
-  SUM(e.rapid_count) AS rapid_total,
-  SUM(e.slow_count) AS slow_total,
-  SUM(e.rapid_count + e.slow_count) AS total
-FROM ev_charge e
-GROUP BY e.metro
+  m.code_name AS metro,
+  SUM(ec.rapid_count) AS rapid_total,
+  SUM(ec.slow_count) AS slow_total,
+  SUM(ec.rapid_count + ec.slow_count) AS total
+FROM ev_charge ec
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ec.metro_code
+GROUP BY ec.metro_code
 ORDER BY total DESC;
 ```
 
@@ -294,31 +328,34 @@ ORDER BY total DESC;
 
 ### M-03. 신재생에너지 + 계약종별
 ```
-자연어: 2023년 태양광 설치 용량 상위 지역의 전력 자급률은?
+자연어: 2024년 태양광 설치 용량 상위 지역의 전력 자급률은?
 테이블: renew_energy + contract_type
+비고: renew_energy는 2024년 데이터만 존재
 ```
 ```sql
 WITH renew AS (
-  SELECT metro, city, SUM(capacity) AS solar_capacity
+  SELECT metro_code, city_code, SUM(capacity) AS solar_capacity
   FROM renew_energy
-  WHERE year = '2023' AND gen_source = '태양광'
-  GROUP BY metro, city
+  WHERE year = '2024' AND gen_source = '태양광'
+  GROUP BY metro_code, city_code
   ORDER BY solar_capacity DESC
   LIMIT 10
 ),
 usage AS (
-  SELECT metro, city, SUM(power_usage) AS total_usage
+  SELECT metro_code, city_code, SUM(power_usage) AS total_usage
   FROM contract_type
-  WHERE year = '2023' AND metro != '전체'
-  GROUP BY metro, city
+  WHERE year = '2024'
+  GROUP BY metro_code, city_code
 )
 SELECT
-  r.metro, r.city,
+  m.code_name AS metro, c.code_name AS city,
   r.solar_capacity,
   u.total_usage,
   ROUND(r.solar_capacity * 100.0 / NULLIF(u.total_usage, 0), 4) AS self_ratio_pct
 FROM renew r
-LEFT JOIN usage u ON r.metro = u.metro AND r.city = u.city
+LEFT JOIN usage u ON r.metro_code = u.metro_code AND r.city_code = u.city_code
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = r.metro_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = r.city_code AND c.upper_code = r.metro_code
 ORDER BY self_ratio_pct DESC;
 ```
 
@@ -333,19 +370,20 @@ ORDER BY self_ratio_pct DESC;
 ```
 ```sql
 SELECT
-  ct.city,
+  c.code_name AS city,
   SUM(ct.power_usage)     AS total_power_usage,
   SUM(ic.new_count)       AS total_new_customers,
   SUM(wd.welfare_count)   AS total_welfare_count
 FROM contract_type ct
 LEFT JOIN industry_cust_change ic
   ON ct.year = ic.year AND ct.month = ic.month
-  AND ct.metro = ic.metro AND ct.city = ic.city
+  AND ct.metro_code = ic.metro_code AND ct.city_code = ic.city_code
 LEFT JOIN welfare_discount wd
   ON ct.year = wd.year AND ct.month = wd.month
-  AND ct.metro = wd.metro AND ct.city = wd.city
-WHERE ct.year = '2023' AND ct.metro = '경기도'
-GROUP BY ct.city
+  AND ct.metro_code = wd.metro_code AND ct.city_code = wd.city_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ct.city_code AND c.upper_code = ct.metro_code
+WHERE ct.year = '2023' AND ct.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='경기도')
+GROUP BY ct.city_code
 ORDER BY total_power_usage DESC;
 ```
 
@@ -358,25 +396,27 @@ ORDER BY total_power_usage DESC;
 ```
 ```sql
 WITH mobile_ratio AS (
-  SELECT metro, city,
+  SELECT metro_code, city_code,
     SUM(CASE WHEN bill_type = '모바일' THEN bill_count ELSE 0 END) * 100.0
       / NULLIF(SUM(bill_count), 0) AS mobile_pct
   FROM billing_type
   WHERE year = '2023'
-  GROUP BY metro, city
+  GROUP BY metro_code, city_code
 ),
 power AS (
-  SELECT metro, city, SUM(power_usage) AS total_usage
+  SELECT metro_code, city_code, SUM(power_usage) AS total_usage
   FROM contract_type
-  WHERE year = '2023' AND metro != '전체'
-  GROUP BY metro, city
+  WHERE year = '2023'
+  GROUP BY metro_code, city_code
 )
 SELECT
-  m.metro, m.city,
-  ROUND(m.mobile_pct, 2) AS mobile_pct,
+  m.code_name AS metro, c.code_name AS city,
+  ROUND(mr.mobile_pct, 2) AS mobile_pct,
   p.total_usage
-FROM mobile_ratio m
-JOIN power p ON m.metro = p.metro AND m.city = p.city
+FROM mobile_ratio mr
+JOIN power p ON mr.metro_code = p.metro_code AND mr.city_code = p.city_code
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = mr.metro_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = mr.city_code AND c.upper_code = mr.metro_code
 ORDER BY mobile_pct DESC
 LIMIT 20;
 ```
@@ -387,27 +427,29 @@ LIMIT 20;
 ```
 자연어: 지역별 태양광 용량과 EV 충전기 수 기준으로 친환경 점수 계산해줘
 테이블: renew_energy + ev_charge
+비고: renew_energy는 2024년 데이터만 존재
 ```
 ```sql
 WITH solar AS (
-  SELECT metro, SUM(capacity) AS solar_cap
-  FROM renew_energy WHERE year = '2023' AND gen_source = '태양광'
-  GROUP BY metro
+  SELECT metro_code, SUM(capacity) AS solar_cap
+  FROM renew_energy WHERE year = '2024' AND gen_source = '태양광'
+  GROUP BY metro_code
 ),
 ev AS (
-  SELECT metro,
+  SELECT metro_code,
     SUM(rapid_count) AS rapid,
     SUM(slow_count) AS slow
   FROM ev_charge
-  GROUP BY metro
+  GROUP BY metro_code
 )
 SELECT
-  s.metro,
+  m.code_name AS metro,
   ROUND(s.solar_cap, 0)       AS solar_capacity_kwh,
   ev.rapid + ev.slow          AS total_chargers,
   ROUND(s.solar_cap / 10000 + (ev.rapid * 2 + ev.slow), 2) AS green_score
 FROM solar s
-JOIN ev ON s.metro = ev.metro
+JOIN ev ON s.metro_code = ev.metro_code
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = s.metro_code
 ORDER BY green_score DESC;
 ```
 
@@ -417,28 +459,31 @@ ORDER BY green_score DESC;
 ```
 자연어: 2023년 전력사용량이 전년 대비 20% 이상 증가한 지역의 신재생에너지 설치 현황은?
 테이블: contract_type + renew_energy
+비고: renew_energy는 2024년 데이터만 존재 → 신재생 설치 현황은 2024년 기준
 ```
 ```sql
 WITH usage_change AS (
   SELECT
-    a.metro, a.city,
+    a.metro_code, a.city_code,
     SUM(a.power_usage) AS usage_2022,
     SUM(b.power_usage) AS usage_2023,
     (SUM(b.power_usage) - SUM(a.power_usage)) * 100.0
       / NULLIF(SUM(a.power_usage), 0) AS change_pct
   FROM contract_type a
-  JOIN contract_type b ON a.metro = b.metro AND a.city = b.city AND a.month = b.month
-  WHERE a.year = '2022' AND b.year = '2023' AND a.metro != '전체'
-  GROUP BY a.metro, a.city
+  JOIN contract_type b ON a.metro_code = b.metro_code AND a.city_code = b.city_code AND a.month = b.month
+  WHERE a.year = '2022' AND b.year = '2023'
+  GROUP BY a.metro_code, a.city_code
   HAVING change_pct >= 20
 )
 SELECT
-  uc.metro, uc.city,
+  m.code_name AS metro, c.code_name AS city,
   ROUND(uc.change_pct, 2) AS power_increase_pct,
   SUM(re.capacity) AS renew_capacity
 FROM usage_change uc
-LEFT JOIN renew_energy re ON uc.metro = re.metro AND uc.city = re.city
-GROUP BY uc.metro, uc.city, uc.change_pct
+LEFT JOIN renew_energy re ON uc.metro_code = re.metro_code AND uc.city_code = re.city_code
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = uc.metro_code
+JOIN common_code c ON c.code_type = 'cityCd' AND c.code = uc.city_code AND c.upper_code = uc.metro_code
+GROUP BY uc.metro_code, uc.city_code, uc.change_pct
 ORDER BY uc.change_pct DESC;
 ```
 
@@ -447,6 +492,9 @@ ORDER BY uc.change_pct DESC;
 ---
 
 ## 신규 테이블 시나리오 (12개 파일데이터 기반)
+
+> **주의**: 아래 N-시리즈는 `build_filedata_db.py`로 적재하는 파일데이터 테이블 대상.
+> 해당 테이블들이 DB에 없으면 실행 불가.
 
 ### N-01. 판매통계 계약종별 수익
 ```
@@ -704,7 +752,7 @@ LIMIT 10;
 | S-05 | 단일/단순 | ⭐ | 서울 급속충전기 가장 많은 구 TOP 5 |
 | S-06 | 단일/단순 | ⭐ | 2023년 기초수급자 복지할인 대상 많은 지역 |
 | S-07 | 단일/단순 | ⭐ | 2023년 서울 구별 모바일 청구 건수 |
-| S-08 | 단일/단순 | ⭐ | 2023년 태양광 설치 용량 큰 시군구 TOP 10 |
+| S-08 | 단일/단순 | ⭐ | 2024년 태양광 설치 용량 큰 시군구 TOP 10 |
 | S-09 | 단일/단순 | ⭐ | 2023년 여름 서울 가구당 평균 전력사용량 |
 | S-10 | 단일/단순 | ⭐ | 2023년 제조업 신규 계약 많은 지역 |
 | C-01 | 단일/복합 | ⭐⭐ | 2022→2023 산업용 전력 사용량 변화율 |
@@ -713,7 +761,7 @@ LIMIT 10;
 | C-04 | 단일/복합 | ⭐⭐ | 전력사용량 상위 5개 지역 월별 추이 |
 | M-01 | 멀티/단순 | ⭐⭐ | 서울 구별 주택용 전력사용량 + 복지할인 |
 | M-02 | 멀티/단순 | ⭐⭐ | 시도별 EV 급속/완속 충전소 합계 |
-| M-03 | 멀티/단순 | ⭐⭐ | 태양광 상위 지역 전력 자급률 |
+| M-03 | 멀티/단순 | ⭐⭐ | 태양광 상위 지역 전력 자급률 (2024년) |
 | MC-01 | 멀티/복합 | ⭐⭐⭐ | 경기도 시군구별 전력·신규고객·복지 종합 |
 | MC-02 | 멀티/복합 | ⭐⭐⭐ | 모바일 청구 비율 vs 전력사용량 상관 |
 | MC-03 | 멀티/복합 | ⭐⭐⭐ | 태양광+EV 기반 친환경 점수 |
