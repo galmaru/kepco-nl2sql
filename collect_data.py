@@ -193,6 +193,8 @@ if __name__ == "__main__":
     print("=" * 60)
 
     # 1. 월별 수집 API들
+    # house_avg, industry_cust_change는 API 자체가 서울·부산·울산·경기·세종 5개 지역만 제공
+    # (metroCd 파라미터의 코드 체계가 common_code와 달라 다른 지역 조회 불가)
     apis_monthly = [
         ("contract_type", "powerUsage/contractType.do"),
         ("industry_type", "powerUsage/industryType.do"),

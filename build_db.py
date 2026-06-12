@@ -256,14 +256,12 @@ def load_billing_type(conn):
     rows = []
     for path in files:
         data = load_json(path)
-        # totData(전체 집계) + data(지역별) 모두 적재
-        for key in ("totData", "data"):
-            for item in data.get(key, []):
-                rows.append((
-                    item["year"], item["month"],
-                    item["metro"], item["city"],
-                    item["billTy"], item.get("billCnt"),
-                ))
+        for item in data.get("data", []):
+            rows.append((
+                item["year"], item["month"],
+                item["metro"], item["city"],
+                item["billTy"], item.get("billCnt"),
+            ))
     conn.executemany(
         "INSERT INTO billing_type (year, month, metro, city, bill_type, bill_count) VALUES (?,?,?,?,?,?)",
         rows
@@ -345,18 +343,17 @@ def load_contract_type(conn):
     rows = []
     for path in files:
         data = load_json(path)
-        for key in ("totData", "data"):
-            for item in data.get(key, []):
-                rows.append((
-                    item["year"], item["month"],
-                    item["metro"], item["city"],
-                    item["cntr"],
-                    item.get("custCnt"),
-                    item.get("powerUsage"),
-                    item.get("bill"),
-                    item.get("unitCost"),
-                    item.get("cntrPwr"),
-                ))
+        for item in data.get("data", []):
+            rows.append((
+                item["year"], item["month"],
+                item["metro"], item["city"],
+                item["cntr"],
+                item.get("custCnt"),
+                item.get("powerUsage"),
+                item.get("bill"),
+                item.get("unitCost"),
+                item.get("cntrPwr") or None,  # 빈문자열 → None(NULL)
+            ))
     conn.executemany(
         "INSERT INTO contract_type (year, month, metro, city, contract_type, cust_count, power_usage, bill, unit_cost, contract_power) VALUES (?,?,?,?,?,?,?,?,?,?)",
         rows
@@ -392,17 +389,16 @@ def load_industry_type(conn):
     rows = []
     for path in files:
         data = load_json(path)
-        for key in ("totData", "data"):
-            for item in data.get(key, []):
-                rows.append((
-                    item["year"], item["month"],
-                    item["metro"], item["city"],
-                    item["biz"],
-                    item.get("custCnt"),
-                    item.get("powerUsage"),
-                    item.get("bill"),
-                    item.get("unitCost"),
-                ))
+        for item in data.get("data", []):
+            rows.append((
+                item["year"], item["month"],
+                item["metro"], item["city"],
+                item["biz"],
+                item.get("custCnt"),
+                item.get("powerUsage"),
+                item.get("bill"),
+                item.get("unitCost"),
+            ))
     conn.executemany(
         "INSERT INTO industry_type (year, month, metro, city, biz, cust_count, power_usage, bill, unit_cost) VALUES (?,?,?,?,?,?,?,?,?)",
         rows
@@ -426,6 +422,11 @@ def load_dispersed_gen(conn):
                 item.get("jsDlPwr"), item.get("dlPwr"),
                 item.get("vol1"), item.get("vol2"), item.get("vol3"),
             ))
+    before = len(rows)
+    rows = list(dict.fromkeys(rows))  # 완전 동일 중복 제거 (순서 유지)
+    deduped = before - len(rows)
+    if deduped:
+        print(f"  [중복 제거] {deduped}건 제거 ({before} → {len(rows)})")
     conn.executemany(
         """INSERT INTO dispersed_gen
            (subst_code, subst_name, js_subst_power, subst_power,
