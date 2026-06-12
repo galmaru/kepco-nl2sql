@@ -78,16 +78,16 @@ data.go.kr (한전 파일데이터 305건)
 
 | 테이블 | 설명 | 키 컬럼 |
 |--------|------|--------|
-| `contract_type` | 계약종별 전력사용 | year, month, metro, city, contract_type |
-| `industry_type` | 산업분류별 전력사용 | year, month, metro, city, biz |
-| `business_type` | 업종별 전력사용 | year, month, metro, city, biz_type |
-| `billing_type` | 청구서 유형별 발송 | year, month, metro, city, bill_type |
-| `welfare_discount` | 복지할인 현황 | year, month, metro, city, welfare_type |
-| `industry_cust_change` | 산업별 고객 증감 | year, month, metro, city, biz |
-| `house_avg` | 가구당 평균 전력사용 | year, month, metro, city |
+| `contract_type` | 계약종별 전력사용 | year, month, metro_code, city_code, contract_type |
+| `industry_type` | 산업분류별 전력사용 | year, month, metro_code, city_code, biz_code |
+| `business_type` | 업종별 전력사용 | year, month, metro_code, city_code, biz_type_code |
+| `billing_type` | 청구서 유형별 발송 | year, month, metro_code, city_code, bill_type |
+| `welfare_discount` | 복지할인 현황 | year, month, metro_code, city_code, welfare_type |
+| `industry_cust_change` | 산업별 고객 증감 | year, month, metro_code, city_code, biz_code |
+| `house_avg` | 가구당 평균 전력사용 | year, month, metro_code, city_code |
 | `contract` | 전자입찰계약 공고 | notice_date, company_id, name |
 | `ev_charge` | EV 충전소 설치현황 | metro, city, station_place |
-| `ev_charge_manage` | EV 충전기 운영현황 | cs_id, cp_id |
+| `ev_charge_manage` | EV 충전기 운영현황 | cs_id, cp_id (`status_updated_at` 전체 빈값 — 사용 불가) |
 | `dispersed_gen` | 분산전원연계 | subst_cd, mtr_no |
 | `renew_energy` | 신재생에너지 현황 | year, metro, city, gen_source |
 | `common_code` | 지역·계약·업종 코드 | code_type, code |
@@ -115,9 +115,11 @@ data.go.kr (한전 파일데이터 305건)
 ### 공통 코드 매핑
 
 `common_code` 테이블의 `code_type`별 주요 값:
-- `metroCd`: 11=서울, 26=부산, 27=대구, 28=인천, 29=광주, 30=대전, 31=울산, 36=세종, 41=경기, 42=강원, 43=충북, 44=충남, 45=전북, 46=전남, 47=경북, 48=경남, 50=제주
+- `metroCd`: 11=서울특별시, 21=부산광역시, 22=대구광역시, 23=인천광역시, 24=광주광역시, 25=대전광역시, 26=울산광역시, 31=경기도, 32=강원특별자치도, 33=충청북도, 34=충청남도, 35=전북특별자치도, 36=전라남도, 37=경상북도, 38=경상남도, 39=제주특별자치도, 41=세종특별자치시, 99=황해북도
+- `cityCd`: 개성시=100 (황해북도 소속)
 - `cntrCd`: 100=주택용, 200=일반용, 300=교육용, 400=산업용, 500=농사용, 600=가로등
-- `bizCd`: A=농림어업, B=광업, C=제조업, D=전기가스수도, E=하수·환경, F=건설업, G=도소매, H=운수, I=숙박음식 등
+- `bizCd`: A=농업·임업·어업, B=광업, C=제조업, D=전기·가스·수도, E=하수·환경, F=건설업, G=도소매, H=운수, I=숙박음식, J=정보통신, K=금융보험, L=부동산, M=전문과학기술, N=사업시설관리, O=공공행정, P=교육, Q=보건복지, R=예술·스포츠, S=협회·단체, T=가구내고용, U=국제기관, KEPCO01=주택용 (KSIC 외 한전 자체 분류)
+- `bizTypeCd`: 01~38 (한전 업종별 세분류, business_type 테이블 전용)
 
 ### SQL 주의사항
 
@@ -125,6 +127,9 @@ data.go.kr (한전 파일데이터 305건)
 - `period` 컬럼(sales_stat)은 'YYYY-MM' 형식 → `SUBSTR(period, 1, 4)`로 연도 추출
 - `dong_industry_power.biz_name_large`는 파이프(`|`)가 없는 단어 (e.g. `제조업`, `건설업`)로 등호 조건 사용
 - `ppa_by_region.region`은 줄임말 (`전북`, `전남`) vs `net_metering_usage.metro`는 전체명 (`전북특별자치도`) → LIKE로 매핑
+- 지역·업종 텍스트 조회 시 common_code JOIN 필요: `JOIN common_code m ON m.code_type='metroCd' AND m.code=t.metro_code`
+- `industry_type.biz_code` → `bizCd`, `business_type.biz_type_code` → `bizTypeCd`, `industry_cust_change.biz_code` → `bizCd`
+- `강원도`/`강원특별자치도` 모두 metro_code='32'로 통합됨, `전라북도`/`전북특별자치도` 모두 metro_code='35'
 
 ---
 
