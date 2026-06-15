@@ -6,212 +6,119 @@
 > 지역명 표시 시 `common_code` JOIN 필요. city_code는 광역시도 내 고유값이므로
 > city JOIN에는 반드시 `AND c.upper_code = <table>.metro_code` 조건을 추가.
 >
-> `metro_code` 주요값: 11=서울, 21=부산, 22=대구, 23=인천, 24=광주, 25=대전, 26=울산, 31=경기도, 32=강원, 33=충북, 34=충남, 35=전북, 36=전남, 37=경북, 38=경남, 39=제주, 41=세종.
-> `biz_code` 주요값: C=제조업, D=전기·가스, G=도소매, I=숙박음식, KEPCO01=주택용.
+> `metro_code` 주요값: 11=서울특별시, 21=부산광역시, 22=대구광역시, 23=인천광역시, 24=광주광역시, 25=대전광역시, 26=울산광역시, 31=경기도, 32=강원특별자치도, 33=충청북도, 34=충청남도, 35=전북특별자치도, 36=전라남도, 37=경상북도, 38=경상남도, 39=제주특별자치도, 41=세종특별자치시.
+> `biz_code` 주요값: A=농업·임업·어업, B=광업, C=제조업, D=전기·가스, E=수도·하수, F=건설업, G=도소매, H=운수·창고, I=숙박·음식점, J=정보통신, K=금융·보험, L=부동산, M=전문·과학기술, N=사업시설관리, O=공공행정, P=교육, Q=보건복지, R=예술·스포츠, S=협회·단체, T=가구내고용, U=국제기관.
 
 ---
 
-## 단일 테이블 / 단순 쿼리
+## 단일 테이블 시나리오 (I-01 ~ I-08)
 
-### S-01. 특정 연월 + 지역 + 계약종별 전력사용량
+### I-01. 특정 월 산업별 전력사용량 전국 합계 [BASIC+SCHEMA]
+
 ```
-자연어: 2023년 1월 서울 주택용 전력 사용량 알려줘
-테이블: contract_type
+자연어: 2024년 3월 제조업 전력사용량 전국 총합은?
+평가 포인트: common_code 서브쿼리로 biz_code 조회, year/month TEXT 타입 처리
+테이블: industry_type, common_code
 ```
 ```sql
-SELECT m.code_name AS metro, c.code_name AS city, ct.contract_type, SUM(ct.power_usage) AS total_usage
-FROM contract_type ct
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ct.metro_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ct.city_code AND c.upper_code = ct.metro_code
-WHERE ct.year = '2023' AND ct.month = '01'
-  AND ct.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시') AND ct.contract_type = '주택용'
-GROUP BY ct.metro_code, ct.city_code, ct.contract_type;
+SELECT SUM(power_usage) AS total_usage
+FROM industry_type
+WHERE year = '2024'
+  AND month = '03'
+  AND biz_code = (SELECT code FROM common_code WHERE code_type = 'bizCd' AND code_name = '제조업');
 ```
+| total_usage |
+|---|
+| 22020974768.0 |
 
 ---
 
-### S-02. 특정 지역 전체 계약종별 전기요금 조회
+### I-02. 연간 전력사용량 TOP 5 산업 [BASIC+RANK]
+
 ```
-자연어: 2023년 12월 경기도 계약종별 전기요금 보여줘
-테이블: contract_type
+자연어: 2024년 한 해 동안 전력을 가장 많이 쓴 산업 TOP 5
+평가 포인트: GROUP BY + ORDER BY DESC + LIMIT 5, 산업명 출력 시 common_code JOIN
+테이블: industry_type, common_code
 ```
 ```sql
-SELECT ct.contract_type, SUM(ct.bill) AS total_bill
-FROM contract_type ct
-WHERE ct.year = '2023' AND ct.month = '12' AND ct.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='경기도')
-GROUP BY ct.contract_type
-ORDER BY total_bill DESC;
-```
-
----
-
-### S-03. 전국 월별 가중평균 판매단가 추이
-```
-자연어: 2023년 월별 전국 평균 판매단가 추이 알려줘
-테이블: contract_type
-```
-```sql
-SELECT month,
-  ROUND(SUM(bill) * 1.0 / NULLIF(SUM(power_usage), 0), 4) AS avg_unit_cost
-FROM contract_type
-WHERE year = '2023'
-GROUP BY month
-ORDER BY month;
-```
-
----
-
-### S-04. 특정 산업분류 전력사용량 조회
-```
-자연어: 2023년 제조업 전력 사용량이 가장 많은 지역 TOP 5
-테이블: industry_type
-```
-```sql
-SELECT m.code_name AS metro, c.code_name AS city, SUM(it.power_usage) AS total_usage
-FROM industry_type it
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = it.metro_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = it.city_code AND c.upper_code = it.metro_code
-WHERE it.year = '2023' AND it.biz_code = (SELECT code FROM common_code WHERE code_type='bizCd' AND code_name='제조업')
-GROUP BY it.metro_code, it.city_code
+SELECT b.code_name AS biz,
+       SUM(t.power_usage) AS total_usage
+FROM industry_type t
+JOIN common_code b ON b.code_type = 'bizCd' AND b.code = t.biz_code
+WHERE t.year = '2024'
+GROUP BY t.biz_code
 ORDER BY total_usage DESC
 LIMIT 5;
 ```
+| biz | total_usage |
+|---|---|
+| 제조업 | 256532402896.0 |
+| 부동산업 | 42852444517.0 |
+| 도매 및 소매업 | 20027041441.0 |
+| 농업, 임업 및 어업 | 19045847475.0 |
+| 숙박 및 음식점업 | 17128659618.0 |
 
 ---
 
-### S-05. EV 충전소 현황 조회
+### I-03. 특정 산업 전력사용량 광역시도 TOP 3 [RANK]
+
 ```
-자연어: 서울에서 급속충전기가 가장 많은 구 TOP 5
-테이블: ev_charge
+자연어: 2024년 건설업 전력사용량이 가장 많은 광역시도 TOP 3
+평가 포인트: common_code 서브쿼리로 biz_code 조회, metro_code 기준 GROUP BY, city_code 오선택 여부 관찰
+테이블: industry_type, common_code
 ```
 ```sql
-SELECT c.code_name AS city, SUM(ec.rapid_count) AS rapid_total
-FROM ev_charge ec
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ec.city_code AND c.upper_code = ec.metro_code
-WHERE ec.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
-GROUP BY ec.city_code
-ORDER BY rapid_total DESC
-LIMIT 5;
+SELECT m.code_name AS metro,
+       SUM(t.power_usage) AS total_usage
+FROM industry_type t
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = t.metro_code
+WHERE t.year = '2024'
+  AND t.biz_code = (SELECT code FROM common_code WHERE code_type = 'bizCd' AND code_name = '건설업')
+GROUP BY t.metro_code
+ORDER BY total_usage DESC
+LIMIT 3;
 ```
+| metro | total_usage |
+|---|---|
+| 경기도 | 1328295729.0 |
+| 서울특별시 | 692278457.0 |
+| 인천광역시 | 270375761.0 |
 
 ---
 
-### S-06. 복지할인 수혜자 현황
-```
-자연어: 2023년 기초수급자 복지할인 대상이 가장 많은 지역은?
-테이블: welfare_discount
-```
-```sql
-SELECT m.code_name AS metro, c.code_name AS city, SUM(wd.welfare_count) AS total_count
-FROM welfare_discount wd
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = wd.metro_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = wd.city_code AND c.upper_code = wd.metro_code
-WHERE wd.year = '2023' AND wd.welfare_type = '기초수급자'
-GROUP BY wd.metro_code, wd.city_code
-ORDER BY total_count DESC
-LIMIT 10;
-```
+### I-04. 전년 대비 전력사용량 증감률 [TIME]
 
----
-
-### S-07. 요금청구 방식 현황
 ```
-자연어: 2023년 서울 구별 모바일 청구 건수 알려줘
-테이블: billing_type
-```
-```sql
-SELECT c.code_name AS city, SUM(bt.bill_count) AS mobile_count
-FROM billing_type bt
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = bt.city_code AND c.upper_code = bt.metro_code
-WHERE bt.year = '2023' AND bt.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시') AND bt.bill_type = '모바일'
-GROUP BY bt.city_code
-ORDER BY mobile_count DESC;
-```
-
----
-
-### S-08. 신재생에너지 용량 조회
-```
-자연어: 2024년 태양광 설치 용량이 가장 큰 시군구 TOP 10
-테이블: renew_energy
-비고: renew_energy는 2024년 데이터만 존재
-```
-```sql
-SELECT m.code_name AS metro, c.code_name AS city, SUM(re.capacity) AS total_capacity
-FROM renew_energy re
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = re.metro_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = re.city_code AND c.upper_code = re.metro_code
-WHERE re.year = '2024' AND re.gen_source = '태양광'
-GROUP BY re.metro_code, re.city_code
-ORDER BY total_capacity DESC
-LIMIT 10;
-```
-
----
-
-### S-09. 가구 평균 전력사용량
-```
-자연어: 2023년 여름(7~8월) 서울 가구당 평균 전력사용량은?
-테이블: house_avg
-```
-```sql
-SELECT ht.month, m.code_name AS metro, AVG(ht.power_usage) AS avg_usage
-FROM house_avg ht
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ht.metro_code
-WHERE ht.year = '2023' AND ht.month IN ('07', '08') AND ht.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
-GROUP BY ht.month, ht.metro_code
-ORDER BY ht.month;
-```
-
----
-
-### S-10. 산업별 고객 증감
-```
-자연어: 2023년 제조업 전기 신규 계약이 가장 많은 지역은?
-테이블: industry_cust_change
-```
-```sql
-SELECT m.code_name AS metro, c.code_name AS city, SUM(ic.new_count) AS total_new
-FROM industry_cust_change ic
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ic.metro_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ic.city_code AND c.upper_code = ic.metro_code
-WHERE ic.year = '2023' AND ic.biz_code = (SELECT code FROM common_code WHERE code_type='bizCd' AND code_name='제조업')
-GROUP BY ic.metro_code, ic.city_code
-ORDER BY total_new DESC
-LIMIT 10;
-```
-
----
-
-## 단일 테이블 / 복합 쿼리
-
-### C-01. 연도별 비교 (YoY)
-```
-자연어: 2022년 대비 2023년 전국 산업용 전력 사용량 변화율은?
-테이블: contract_type
+자연어: 2023년 대비 2024년 제조업 전력사용량 증감률은?
+평가 포인트: CASE WHEN 연도 피벗, 정수 나눗셈 방지 (* 100.0)
+테이블: industry_type
 ```
 ```sql
 SELECT
-  a.year AS base_year,
-  b.year AS compare_year,
-  SUM(a.power_usage) AS usage_2022,
-  SUM(b.power_usage) AS usage_2023,
-  ROUND((SUM(b.power_usage) - SUM(a.power_usage)) * 100.0 / SUM(a.power_usage), 2) AS change_pct
-FROM contract_type a
-JOIN contract_type b
-  ON a.metro_code = b.metro_code AND a.city_code = b.city_code
-  AND a.month = b.month AND a.contract_type = b.contract_type
-WHERE a.year = '2022' AND b.year = '2023'
-  AND a.contract_type = '산업용'
-GROUP BY a.year, b.year;
+  SUM(CASE WHEN year = '2023' THEN power_usage END) AS usage_2023,
+  SUM(CASE WHEN year = '2024' THEN power_usage END) AS usage_2024,
+  ROUND(
+    (SUM(CASE WHEN year = '2024' THEN power_usage END)
+     - SUM(CASE WHEN year = '2023' THEN power_usage END))
+    * 100.0 / SUM(CASE WHEN year = '2023' THEN power_usage END),
+    6
+  ) AS yoy_pct
+FROM industry_type
+WHERE biz_code = (SELECT code FROM common_code WHERE code_type = 'bizCd' AND code_name = '제조업')
+  AND year IN ('2023', '2024');
 ```
+| usage_2023 | usage_2024 | yoy_pct |
+|---|---|---|
+| 260881303843.0 | 256532402896.0 | -1.67 |
 
 ---
 
-### C-02. 계절별 집계
+### I-05. 특정 산업 계절별 전력사용량 비교 [TIME]
+
 ```
-자연어: 2023년 계절별(봄/여름/가을/겨울) 전국 주택용 전력사용량 비교
-테이블: contract_type
+자연어: 2024년 전국 숙박 및 음식점업의 계절별(봄/여름/가을/겨울) 전력사용량 비교
+평가 포인트: 월 → 계절 CASE WHEN 로직, common_code 서브쿼리로 biz_code 조회
+테이블: industry_type, common_code
 ```
 ```sql
 SELECT
@@ -222,561 +129,266 @@ SELECT
     ELSE '겨울'
   END AS season,
   SUM(power_usage) AS total_usage
-FROM contract_type
-WHERE year = '2023' AND contract_type = '주택용'
+FROM industry_type
+WHERE year = '2024'
+  AND biz_code = (SELECT code FROM common_code WHERE code_type = 'bizCd' AND code_name = '숙박 및 음식점업')
 GROUP BY season
 ORDER BY total_usage DESC;
 ```
+| season | total_usage |
+|---|---|
+| 여름 | 4792374405.0 |
+| 가을 | 4388387206.0 |
+| 겨울 | 4339067140.0 |
+| 봄 | 3608830867.0 |
 
 ---
 
-### C-03. 비율 계산
+### I-06. 산업별 평균 판매단가 TOP 5 [BASIC+RANK]
+
 ```
-자연어: 2023년 서울 복지할인 유형별 비율 알려줘
-테이블: welfare_discount
+자연어: 2024년 산업별 평균 판매단가(원/kWh)가 가장 비싼 산업 TOP 5
+평가 포인트: NULLIF 0 나눗셈 방지, AVG(unit_cost) 직접 사용 금지
+테이블: industry_type, common_code
 ```
 ```sql
-SELECT
-  welfare_type,
-  SUM(welfare_count) AS count,
-  ROUND(SUM(welfare_count) * 100.0 / SUM(SUM(welfare_count)) OVER (), 2) AS ratio_pct
-FROM welfare_discount
-WHERE year = '2023' AND metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
-GROUP BY welfare_type
-ORDER BY count DESC;
+SELECT b.code_name AS biz,
+       ROUND(SUM(t.bill) / NULLIF(SUM(t.power_usage), 0), 2) AS avg_unit_cost
+FROM industry_type t
+JOIN common_code b ON b.code_type = 'bizCd' AND b.code = t.biz_code
+WHERE t.year = '2024'
+GROUP BY t.biz_code
+ORDER BY avg_unit_cost DESC
+LIMIT 5;
+```
+| biz | avg_unit_cost |
+|---|---|
+| 가구 내 고용활동 및 달리 분류되지 않은 자가 소비 생산활동 | 202.77 |
+| 광업 | 189.11 |
+| 협회 및 단체, 수리 및 기타 개인 서비스업 | 184.92 |
+| 사업시설 관리, 사업 지원 및 임대 서비스업 | 184.44 |
+| 건설업 | 182.24 |
+
+---
+
+### I-07. 특정 지역 산업별 전력사용량 점유율 [RANK]
+
+```
+자연어: 2024년 서울특별시에서 각 산업별 전력사용량 점유율(%)을 보여줘
+평가 포인트: SUM() OVER() 윈도우 함수 필수, metro_code 서브쿼리로 조회
+테이블: industry_type, common_code
+```
+```sql
+SELECT b.code_name AS biz,
+       SUM(t.power_usage) AS usage,
+       ROUND(SUM(t.power_usage) * 100.0 / SUM(SUM(t.power_usage)) OVER (), 2) AS share_pct
+FROM industry_type t
+JOIN common_code b ON b.code_type = 'bizCd' AND b.code = t.biz_code
+WHERE t.year = '2024'
+  AND t.metro_code = (SELECT code FROM common_code WHERE code_type = 'metroCd' AND code_name = '서울특별시')
+GROUP BY t.biz_code
+ORDER BY usage DESC;
+```
+| biz | usage | share_pct |
+|---|---|---|
+| 부동산업 | 13078656390.0 | 38.37 |
+| 도매 및 소매업 | 3462580525.0 | 10.16 |
+| 숙박 및 음식점업 | 2414902189.0 | 7.09 |
+| 운수 및 창고업 | 2231346030.0 | 6.55 |
+| 정보통신업 | 2162274507.0 | 6.34 |
+
+---
+
+### I-08. 존재하지 않는 컬럼 질문 거절 [IMPOSSIBLE]
+
+```
+자연어: 2024년 제조업의 전국 계약전력 총합은 얼마야?
+평가 포인트: industry_type에 contract_power 컬럼 없음 → 거절 또는 컬럼 오류 필수
+            정상 실행 가능한 SQL을 반환하거나 환각 결과를 출력하면 실패
+테이블: industry_type
+```
+```sql
+-- IMPOSSIBLE: industry_type 테이블에 contract_power 컬럼 없음
+-- 올바른 응답: 존재하지 않는 컬럼임을 안내하고 SQL 생성 거부
+-- 오답 예시: SELECT SUM(contract_power) FROM industry_type WHERE biz_code = 'C'
 ```
 
 ---
 
-### C-04. 조건부 순위
+## JOIN 시나리오 (IJ-01 ~ IJ-04)
+
+### IJ-01. 전력사용 증가 TOP 5 광역시도 + 신규 고객 수 [JOIN+TIME]
+
 ```
-자연어: 2023년 전력사용량 상위 5개 지역의 월별 사용량 추이
-테이블: contract_type
+자연어: 2024년 제조업에서 전력사용량이 가장 많이 늘어난 광역시도 TOP 5와, 같은 기간 해당 지역의 제조업 신규 고객 수를 같이 보여줘
+평가 포인트: 복수 CTE 구성, COALESCE NULL 처리, LEFT JOIN 필수
+테이블: industry_type, industry_cust_change, common_code
 ```
 ```sql
-WITH top_cities AS (
-  SELECT metro_code, city_code, SUM(power_usage) AS total
-  FROM contract_type
-  WHERE year = '2023'
-  GROUP BY metro_code, city_code
-  ORDER BY total DESC
-  LIMIT 5
-)
-SELECT ct.month, m.code_name AS metro, c.code_name AS city, SUM(ct.power_usage) AS monthly_usage
-FROM contract_type ct
-JOIN top_cities tc ON ct.metro_code = tc.metro_code AND ct.city_code = tc.city_code
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ct.metro_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ct.city_code AND c.upper_code = ct.metro_code
-WHERE ct.year = '2023'
-GROUP BY ct.month, ct.metro_code, ct.city_code
-ORDER BY ct.month, monthly_usage DESC;
-```
-
----
-
-## 멀티 테이블 / 단순 쿼리
-
-### M-01. 계약종별 + 복지할인 (지역 기준 JOIN)
-```
-자연어: 2023년 서울 구별 주택용 전력사용량과 복지할인 수혜 건수를 같이 보여줘
-테이블: contract_type + welfare_discount
-```
-```sql
-WITH ct_agg AS (
-  SELECT city_code, SUM(power_usage) AS power_usage
-  FROM contract_type
-  WHERE year = '2023'
-    AND metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
-    AND contract_type = '주택용'
-  GROUP BY city_code
+WITH mfg_code AS (
+  SELECT code FROM common_code WHERE code_type = 'bizCd' AND code_name = '제조업'
 ),
-wd_agg AS (
-  SELECT city_code, SUM(welfare_count) AS welfare_count
-  FROM welfare_discount
-  WHERE year = '2023'
-    AND metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
-  GROUP BY city_code
+u24 AS (
+  SELECT metro_code, SUM(power_usage) AS usage
+  FROM industry_type
+  WHERE year = '2024' AND biz_code = (SELECT code FROM mfg_code)
+  GROUP BY metro_code
+),
+u23 AS (
+  SELECT metro_code, SUM(power_usage) AS usage
+  FROM industry_type
+  WHERE year = '2023' AND biz_code = (SELECT code FROM mfg_code)
+  GROUP BY metro_code
+),
+nc AS (
+  SELECT metro_code, SUM(new_count) AS new_cust
+  FROM industry_cust_change
+  WHERE year = '2024' AND biz_code = (SELECT code FROM mfg_code)
+  GROUP BY metro_code
 )
-SELECT c.code_name AS city, ct_agg.power_usage, COALESCE(wd_agg.welfare_count, 0) AS welfare_count
-FROM ct_agg
-LEFT JOIN wd_agg ON ct_agg.city_code = wd_agg.city_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ct_agg.city_code
-  AND c.upper_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='서울특별시')
-ORDER BY power_usage DESC;
+SELECT m.code_name AS metro,
+       u24.usage - COALESCE(u23.usage, 0) AS usage_increase,
+       COALESCE(nc.new_cust, 0) AS new_cust_count
+FROM u24
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = u24.metro_code
+LEFT JOIN u23 ON u24.metro_code = u23.metro_code
+LEFT JOIN nc ON u24.metro_code = nc.metro_code
+ORDER BY usage_increase DESC
+LIMIT 5;
 ```
+| metro | usage_increase | new_cust_count |
+|---|---|---|
+| 경기도 | 569162000.0 | 1001033 |
+| 충청남도 | 115615915.0 | 0 |
+| 세종특별자치시 | 63000499.0 | 17543 |
+| 광주광역시 | 43842136.0 | 0 |
+| 제주특별자치도 | 3279975.0 | 0 |
 
 ---
 
-### M-02. EV 충전소 + 공통코드
+### IJ-02. 광역시도별 제조업 전력사용량 대비 가구당 평균 전력사용량 배율 [JOIN+BASIC]
+
 ```
-자연어: 시도별 EV 충전소 급속/완속 합계 알려줘
-테이블: ev_charge + common_code
+자연어: 2024년 광역시도별로 제조업 전력사용량이 가구당 평균 전력사용량의 몇 배인지 계산해줘
+평가 포인트: house_avg.power_usage는 이미 가구당 평균(kWh) → AVG() 사용, NULLIF 이중 적용
+테이블: industry_type, house_avg, common_code
 ```
 ```sql
-SELECT
-  m.code_name AS metro,
-  SUM(ec.rapid_count) AS rapid_total,
-  SUM(ec.slow_count) AS slow_total,
-  SUM(ec.rapid_count + ec.slow_count) AS total
-FROM ev_charge ec
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ec.metro_code
-GROUP BY ec.metro_code
-ORDER BY total DESC;
+WITH ind AS (
+  SELECT metro_code, SUM(power_usage) AS ind_usage
+  FROM industry_type
+  WHERE year = '2024'
+    AND biz_code = (SELECT code FROM common_code WHERE code_type = 'bizCd' AND code_name = '제조업')
+  GROUP BY metro_code
+),
+house AS (
+  SELECT metro_code, AVG(power_usage) AS avg_per_house
+  FROM house_avg
+  WHERE year = '2024'
+  GROUP BY metro_code
+)
+SELECT m.code_name AS metro,
+       i.ind_usage,
+       ROUND(h.avg_per_house, 2) AS avg_house_usage,
+       ROUND(i.ind_usage / NULLIF(h.avg_per_house, 0), 1) AS ratio
+FROM ind i
+JOIN house h ON i.metro_code = h.metro_code
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = i.metro_code
+ORDER BY ratio DESC;
 ```
+| metro | ind_usage | avg_house_usage | ratio |
+|---|---|---|---|
+| 경기도 | 68684716267.0 | 262.46 | 261700679.5 |
+| 울산광역시 | 25742969854.0 | 254.1 | 101311651.6 |
+| 부산광역시 | 6708004876.0 | 241.55 | 27770967.5 |
+| 세종특별자치시 | 1872035526.0 | 294.69 | 6352630.6 |
+| 서울특별시 | 1349813098.0 | 245.42 | 5500023.8 |
 
 ---
 
-### M-03. 신재생에너지 + 계약종별
+### IJ-03. 광역시도별 산업용 계약전력 대비 신재생에너지 설비용량 비율(%) TOP 5 [JOIN+RANK]
+
 ```
-자연어: 2024년 태양광 설치 용량 상위 지역의 전력 자급률은?
-테이블: renew_energy + contract_type
-비고: renew_energy는 2024년 데이터만 존재
+자연어: 2024년 광역시도별 산업용 계약전력(kW) 대비 신재생에너지 설비용량(kW) 비율(%)이 높은 상위 5개 지역을 보여줘
+평가 포인트: contract_type='산업용' 필터, renew_energy는 MAX(area_capacity) GROUP BY metro_code,
+            동일 단위(kW/kW) 백분율 계산(×100), LEFT JOIN으로 신재생 없는 지역 포함
+테이블: contract_type, renew_energy, common_code
 ```
 ```sql
-WITH renew AS (
-  SELECT metro_code, city_code, SUM(capacity) AS solar_capacity
+WITH ct AS (
+  SELECT metro_code, SUM(contract_power) AS total_contract_kw
+  FROM contract_type
+  WHERE year = '2024'
+    AND contract_type = '산업용'
+  GROUP BY metro_code
+),
+re AS (
+  SELECT metro_code, MAX(area_capacity) AS renew_cap_kw
   FROM renew_energy
-  WHERE year = '2024' AND gen_source = '태양광'
+  WHERE year = '2024'
+  GROUP BY metro_code
+)
+SELECT m.code_name AS metro,
+       ct.total_contract_kw,
+       re.renew_cap_kw,
+       ROUND(re.renew_cap_kw * 100.0 / NULLIF(ct.total_contract_kw, 0), 2) AS renew_ratio_pct
+FROM ct
+LEFT JOIN re ON ct.metro_code = re.metro_code
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ct.metro_code
+ORDER BY renew_ratio_pct DESC
+LIMIT 5;
+```
+| metro | total_contract_kw | renew_cap_kw | renew_ratio_pct |
+|---|---|---|---|
+| 전북특별자치도 | 67909309.0 | 733913.31 | 1.08 |
+| 강원특별자치도 | 44816844.0 | 383089.53 | 0.85 |
+| 경상북도 | 171281775.0 | 1454747.43 | 0.85 |
+| 전라남도 | 112826209.0 | 903097.68 | 0.8 |
+| 광주광역시 | 22794544.0 | 169876.74 | 0.75 |
+
+---
+
+### IJ-04. 제조업 고객 많은 상위 5 시군구의 전자/우편 청구서 발송건수 [JOIN+SCHEMA]
+
+```
+자연어: 2024년 제조업 고객이 많은 상위 5개 시군구에서, 전자청구서(이메일/모바일/카카오) 및 우편 청구서 발송 건수를 함께 보여줘
+평가 포인트: metro_code+city_code 복합키 JOIN, bill_type 실제 값 사용 ('이메일','모바일','카카오','우편')
+테이블: industry_type, billing_type, common_code
+```
+```sql
+WITH mfg AS (
+  SELECT metro_code, city_code, SUM(cust_count) AS mfg_cnt
+  FROM industry_type
+  WHERE year = '2024'
+    AND biz_code = (SELECT code FROM common_code WHERE code_type = 'bizCd' AND code_name = '제조업')
   GROUP BY metro_code, city_code
-  ORDER BY solar_capacity DESC
-  LIMIT 10
+  ORDER BY mfg_cnt DESC
+  LIMIT 5
 ),
-usage AS (
-  SELECT metro_code, city_code, SUM(power_usage) AS total_usage
-  FROM contract_type
+bills AS (
+  SELECT metro_code, city_code,
+    SUM(CASE WHEN bill_type IN ('이메일','모바일','카카오') THEN bill_count ELSE 0 END) AS e_bill,
+    SUM(CASE WHEN bill_type = '우편' THEN bill_count ELSE 0 END) AS paper_bill
+  FROM billing_type
   WHERE year = '2024'
   GROUP BY metro_code, city_code
 )
-SELECT
-  m.code_name AS metro, c.code_name AS city,
-  r.solar_capacity,
-  u.total_usage,
-  ROUND(r.solar_capacity * 100.0 / NULLIF(u.total_usage, 0), 4) AS self_ratio_pct
-FROM renew r
-LEFT JOIN usage u ON r.metro_code = u.metro_code AND r.city_code = u.city_code
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = r.metro_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = r.city_code AND c.upper_code = r.metro_code
-ORDER BY self_ratio_pct DESC;
+SELECT m.code_name AS metro,
+       ci.code_name AS city,
+       f.mfg_cnt,
+       b.e_bill,
+       b.paper_bill
+FROM mfg f
+JOIN common_code m ON m.code_type = 'metroCd' AND m.code = f.metro_code
+JOIN common_code ci ON ci.code_type = 'cityCd' AND ci.code = f.city_code
+  AND ci.upper_code = f.metro_code
+LEFT JOIN bills b ON f.metro_code = b.metro_code AND f.city_code = b.city_code
+ORDER BY f.mfg_cnt DESC;
 ```
-
----
-
-## 멀티 테이블 / 복합 쿼리
-
-### MC-01. 전력사용·고객증감·복지할인 종합 대시보드
-```
-자연어: 2023년 경기도 시군구별 전력사용량, 신규 고객 수, 복지할인 수혜자를 한번에 보여줘
-테이블: contract_type + industry_cust_change + welfare_discount
-```
-```sql
-SELECT
-  c.code_name AS city,
-  SUM(ct.power_usage)     AS total_power_usage,
-  SUM(ic.new_count)       AS total_new_customers,
-  SUM(wd.welfare_count)   AS total_welfare_count
-FROM contract_type ct
-LEFT JOIN industry_cust_change ic
-  ON ct.year = ic.year AND ct.month = ic.month
-  AND ct.metro_code = ic.metro_code AND ct.city_code = ic.city_code
-LEFT JOIN welfare_discount wd
-  ON ct.year = wd.year AND ct.month = wd.month
-  AND ct.metro_code = wd.metro_code AND ct.city_code = wd.city_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = ct.city_code AND c.upper_code = ct.metro_code
-WHERE ct.year = '2023' AND ct.metro_code = (SELECT code FROM common_code WHERE code_type='metroCd' AND code_name='경기도')
-GROUP BY ct.city_code
-ORDER BY total_power_usage DESC;
-```
-
----
-
-### MC-02. 청구방식 전환율 + 전력사용량 상관
-```
-자연어: 2023년 모바일 청구 비율이 높은 지역이 전력 사용량도 많은지 비교해줘
-테이블: billing_type + contract_type
-```
-```sql
-WITH mobile_ratio AS (
-  SELECT metro_code, city_code,
-    SUM(CASE WHEN bill_type = '모바일' THEN bill_count ELSE 0 END) * 100.0
-      / NULLIF(SUM(bill_count), 0) AS mobile_pct
-  FROM billing_type
-  WHERE year = '2023'
-  GROUP BY metro_code, city_code
-),
-power AS (
-  SELECT metro_code, city_code, SUM(power_usage) AS total_usage
-  FROM contract_type
-  WHERE year = '2023'
-  GROUP BY metro_code, city_code
-)
-SELECT
-  m.code_name AS metro, c.code_name AS city,
-  ROUND(mr.mobile_pct, 2) AS mobile_pct,
-  p.total_usage
-FROM mobile_ratio mr
-JOIN power p ON mr.metro_code = p.metro_code AND mr.city_code = p.city_code
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = mr.metro_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = mr.city_code AND c.upper_code = mr.metro_code
-ORDER BY mobile_pct DESC
-LIMIT 20;
-```
-
----
-
-### MC-03. EV 인프라 + 신재생에너지 그린지수
-```
-자연어: 지역별 태양광 용량과 EV 충전기 수 기준으로 친환경 점수 계산해줘
-테이블: renew_energy + ev_charge
-비고: renew_energy는 2024년 데이터만 존재
-```
-```sql
-WITH solar AS (
-  SELECT metro_code, SUM(capacity) AS solar_cap
-  FROM renew_energy WHERE year = '2024' AND gen_source = '태양광'
-  GROUP BY metro_code
-),
-ev AS (
-  SELECT metro_code,
-    SUM(rapid_count) AS rapid,
-    SUM(slow_count) AS slow
-  FROM ev_charge
-  GROUP BY metro_code
-)
-SELECT
-  m.code_name AS metro,
-  ROUND(s.solar_cap, 0)       AS solar_capacity_kwh,
-  ev.rapid + ev.slow          AS total_chargers,
-  ROUND(s.solar_cap / 10000 + (ev.rapid * 2 + ev.slow), 2) AS green_score
-FROM solar s
-JOIN ev ON s.metro_code = ev.metro_code
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = s.metro_code
-ORDER BY green_score DESC;
-```
-
----
-
-### MC-04. 입찰계약 + 전력사용 이상치 탐지
-```
-자연어: 2023년 전력사용량이 전년 대비 20% 이상 증가한 지역의 신재생에너지 설치 현황은?
-테이블: contract_type + renew_energy
-비고: renew_energy는 2024년 데이터만 존재 → 신재생 설치 현황은 2024년 기준
-```
-```sql
-WITH usage_change AS (
-  SELECT
-    a.metro_code, a.city_code,
-    SUM(a.power_usage) AS usage_2022,
-    SUM(b.power_usage) AS usage_2023,
-    (SUM(b.power_usage) - SUM(a.power_usage)) * 100.0
-      / NULLIF(SUM(a.power_usage), 0) AS change_pct
-  FROM contract_type a
-  JOIN contract_type b ON a.metro_code = b.metro_code AND a.city_code = b.city_code AND a.month = b.month
-  WHERE a.year = '2022' AND b.year = '2023'
-  GROUP BY a.metro_code, a.city_code
-  HAVING change_pct >= 20
-)
-SELECT
-  m.code_name AS metro, c.code_name AS city,
-  ROUND(uc.change_pct, 2) AS power_increase_pct,
-  SUM(re.capacity) AS renew_capacity
-FROM usage_change uc
-LEFT JOIN renew_energy re ON uc.metro_code = re.metro_code AND uc.city_code = re.city_code
-JOIN common_code m ON m.code_type = 'metroCd' AND m.code = uc.metro_code
-JOIN common_code c ON c.code_type = 'cityCd' AND c.code = uc.city_code AND c.upper_code = uc.metro_code
-GROUP BY uc.metro_code, uc.city_code, uc.change_pct
-ORDER BY uc.change_pct DESC;
-```
-
----
-
----
-
-## 신규 테이블 시나리오 (12개 파일데이터 기반)
-
-> **주의**: 아래 N-시리즈는 `build_filedata_db.py`로 적재하는 파일데이터 테이블 대상.
-> 해당 테이블들이 DB에 없으면 실행 불가.
-
-### N-01. 판매통계 계약종별 수익
-```
-자연어: 2024년 시도별 산업용 전력 판매 수익 TOP 10 알려줘
-테이블: sales_stat
-```
-```sql
-SELECT metro, SUM(revenue) AS total_revenue
-FROM sales_stat
-WHERE SUBSTR(period, 1, 4) = '2024' AND contract_type = '산업용'
-GROUP BY metro
-ORDER BY total_revenue DESC
-LIMIT 10;
-```
-
----
-
-### N-02. 시간대별 전력수요 피크
-```
-자연어: 2024년 시간대별 전국 평균 전력수요 패턴을 알려줘
-테이블: hourly_power
-```
-```sql
-SELECT hour,
-  ROUND(AVG(power_usage), 2) AS avg_usage,
-  MAX(power_usage) AS peak_usage
-FROM hourly_power
-WHERE SUBSTR(date, 1, 4) = '2024'
-GROUP BY hour
-ORDER BY hour;
-```
-
----
-
-### N-03. 하계/동계 피크 비교
-```
-자연어: 여름(7~8월)과 겨울(12~1월) 시간대별 전력수요 차이를 비교해줘
-테이블: hourly_power
-```
-```sql
-SELECT hour,
-  ROUND(AVG(CASE WHEN SUBSTR(date,6,2) IN ('07','08') THEN power_usage END), 2) AS summer_avg,
-  ROUND(AVG(CASE WHEN SUBSTR(date,6,2) IN ('12','01') THEN power_usage END), 2) AS winter_avg
-FROM hourly_power
-GROUP BY hour
-ORDER BY hour;
-```
-
----
-
-### N-04. 동별 상계거래 현황
-```
-자연어: 2024년 상계거래 태양광 설치 건수가 가장 많은 구·동 TOP 10
-테이블: net_metering_usage
-```
-```sql
-SELECT metro, city, dong, SUM(total_count) AS total_installs
-FROM net_metering_usage
-WHERE year = '2024'
-GROUP BY metro, city, dong
-ORDER BY total_installs DESC
-LIMIT 10;
-```
-
----
-
-### N-05. 상계거래 잉여율 분석
-```
-자연어: 2024년 시도별 상계거래 잉여율(잉여전력 / 사용전력)이 가장 높은 지역은?
-테이블: net_metering_usage + net_metering_surplus
-```
-```sql
-SELECT u.metro,
-  SUM(u.power_usage) AS total_usage,
-  SUM(s.surplus_power) AS total_surplus,
-  ROUND(SUM(s.surplus_power) * 100.0 / NULLIF(SUM(u.power_usage), 0), 2) AS surplus_ratio_pct
-FROM net_metering_usage u
-JOIN net_metering_surplus s
-  ON u.metro = s.metro AND u.city = s.city AND u.dong = s.dong
-  AND u.year = s.year AND u.month = s.month
-WHERE u.year = '2024'
-GROUP BY u.metro
-ORDER BY surplus_ratio_pct DESC;
-```
-
----
-
-### N-06. PPA 에너지원별 누적 용량
-```
-자연어: PPA 계약 에너지원별 누적 용량 추이를 연도별로 보여줘
-테이블: ppa_by_source
-```
-```sql
-SELECT year, gen_source,
-  SUM(vendor_count) AS vendors,
-  ROUND(SUM(capacity_kw) / 1000, 2) AS capacity_mw
-FROM ppa_by_source
-GROUP BY year, gen_source
-ORDER BY year, capacity_mw DESC;
-```
-
----
-
-### N-07. PPA 지역별 태양광 집중도
-```
-자연어: 태양광 PPA 계약 용량이 가장 많은 시군구 TOP 10 알려줘
-테이블: ppa_by_region
-```
-```sql
-SELECT region, city,
-  count AS contract_count,
-  ROUND(capacity_kw / 1000, 2) AS capacity_mw
-FROM ppa_by_region
-WHERE gen_source = '태양광'
-ORDER BY capacity_kw DESC
-LIMIT 10;
-```
-
----
-
-### N-08. 요금조정 이력
-```
-자연어: 연도별 주택용 전기요금 조정 이력을 알려줘 (변동이 있었던 연도만)
-테이블: tariff_adjustment
-```
-```sql
-SELECT year, month, residential AS residential_adj_pct, total AS total_adj_pct
-FROM tariff_adjustment
-WHERE residential != 0
-ORDER BY year, month;
-```
-
----
-
-### N-09. 동별 산업 전력사용 밀집 지역
-```
-자연어: 제조업 전력사용량이 가장 높은 읍면동 TOP 10 알려줘
-테이블: dong_industry_power
-```
-```sql
-SELECT metro, city, dong, biz_name_large,
-  SUM(power_usage) AS total_usage
-FROM dong_industry_power
-WHERE biz_name_large = '제조업'
-GROUP BY metro, city, dong, biz_name_large
-ORDER BY total_usage DESC
-LIMIT 10;
-```
-
----
-
-### N-10. 산업별 수용률 여름/겨울 비교
-```
-자연어: 산업별 수용률에서 여름과 겨울 차이가 가장 큰 업종은?
-테이블: industry_utilization
-```
-```sql
-SELECT biz_name, power_range,
-  ROUND(util_jul, 4) AS summer_util,
-  ROUND(util_jan, 4) AS winter_util,
-  ROUND(ABS(util_jul - util_jan), 4) AS season_diff
-FROM industry_utilization
-WHERE util_jul IS NOT NULL AND util_jan IS NOT NULL
-ORDER BY season_diff DESC
-LIMIT 10;
-```
-
----
-
-### N-11. EV 충전소 위치 + 충전기 용량 분석
-```
-자연어: 충전기 용량 100kW 이상 초급속 충전기가 설치된 충전소 목록과 주소 알려줘
-테이블: ev_station_location + ev_charger_capacity
-```
-```sql
-SELECT l.station_name, l.address,
-  COUNT(c.charger_id) AS charger_count,
-  MAX(c.capacity_kw) AS max_capacity_kw
-FROM ev_station_location l
-JOIN ev_charger_capacity c ON l.station_id = c.station_id
-WHERE c.capacity_kw >= 100
-GROUP BY l.station_id, l.station_name, l.address
-ORDER BY max_capacity_kw DESC
-LIMIT 20;
-```
-
----
-
-### N-12. 판매통계 vs 계약종별 연계 분석
-```
-자연어: 2024년 시도별 주택용 고객 1인당 전력사용량은?
-테이블: sales_stat
-```
-```sql
-SELECT metro,
-  SUM(cust_count) AS total_customers,
-  ROUND(SUM(power_usage) / NULLIF(SUM(cust_count), 0), 2) AS usage_per_customer_kwh
-FROM sales_stat
-WHERE SUBSTR(period, 1, 4) = '2024' AND contract_type = '주택용'
-GROUP BY metro
-ORDER BY usage_per_customer_kwh DESC;
-```
-
----
-
-### N-13. 상계거래 + PPA 지역 융합 분석
-```
-자연어: 태양광 PPA 계약이 많은 지역과 상계거래 설치 건수가 많은 지역이 일치하는지 비교해줘
-테이블: ppa_by_region + net_metering_usage
-```
-```sql
-WITH ppa AS (
-  SELECT region, SUM(count) AS ppa_count, ROUND(SUM(capacity_kw)/1000, 2) AS ppa_mw
-  FROM ppa_by_region WHERE gen_source = '태양광'
-  GROUP BY region
-),
-net AS (
-  SELECT metro, SUM(total_count) AS net_count
-  FROM net_metering_usage WHERE year = '2024'
-  GROUP BY metro
-)
-SELECT p.region, p.ppa_count, p.ppa_mw, n.net_count
-FROM ppa p
-LEFT JOIN net n ON n.metro LIKE '%' || p.region || '%'
-ORDER BY p.ppa_mw DESC;
-```
-
----
-
-### N-14. 시간대별 지역 전력수요 + 판매통계 피크 대응
-```
-자연어: 2024년 전력수요 피크 시간대(11시)에 경기도 전력사용량은 얼마야?
-테이블: hourly_power
-```
-```sql
-SELECT date, region, power_usage
-FROM hourly_power
-WHERE hour = 11
-  AND SUBSTR(date, 1, 4) = '2024'
-  AND region LIKE '%경기%'
-ORDER BY power_usage DESC
-LIMIT 10;
-```
-
----
-
-## 시나리오 요약
-
-| ID | 유형 | 난이도 | 자연어 질문 |
-|----|------|--------|------------|
-| S-01 | 단일/단순 | ⭐ | 2023년 1월 서울 주택용 전력 사용량 |
-| S-02 | 단일/단순 | ⭐ | 2023년 12월 경기도 계약종별 전기요금 |
-| S-03 | 단일/단순 | ⭐ | 2023년 월별 전국 평균 판매단가 추이 |
-| S-04 | 단일/단순 | ⭐ | 2023년 제조업 전력 사용량 TOP 5 지역 |
-| S-05 | 단일/단순 | ⭐ | 서울 급속충전기 가장 많은 구 TOP 5 |
-| S-06 | 단일/단순 | ⭐ | 2023년 기초수급자 복지할인 대상 많은 지역 |
-| S-07 | 단일/단순 | ⭐ | 2023년 서울 구별 모바일 청구 건수 |
-| S-08 | 단일/단순 | ⭐ | 2024년 태양광 설치 용량 큰 시군구 TOP 10 |
-| S-09 | 단일/단순 | ⭐ | 2023년 여름 서울 가구당 평균 전력사용량 |
-| S-10 | 단일/단순 | ⭐ | 2023년 제조업 신규 계약 많은 지역 |
-| C-01 | 단일/복합 | ⭐⭐ | 2022→2023 산업용 전력 사용량 변화율 |
-| C-02 | 단일/복합 | ⭐⭐ | 2023년 계절별 주택용 전력사용량 비교 |
-| C-03 | 단일/복합 | ⭐⭐ | 2023년 서울 복지할인 유형별 비율 |
-| C-04 | 단일/복합 | ⭐⭐ | 전력사용량 상위 5개 지역 월별 추이 |
-| M-01 | 멀티/단순 | ⭐⭐ | 서울 구별 주택용 전력사용량 + 복지할인 |
-| M-02 | 멀티/단순 | ⭐⭐ | 시도별 EV 급속/완속 충전소 합계 |
-| M-03 | 멀티/단순 | ⭐⭐ | 태양광 상위 지역 전력 자급률 (2024년) |
-| MC-01 | 멀티/복합 | ⭐⭐⭐ | 경기도 시군구별 전력·신규고객·복지 종합 |
-| MC-02 | 멀티/복합 | ⭐⭐⭐ | 모바일 청구 비율 vs 전력사용량 상관 |
-| MC-03 | 멀티/복합 | ⭐⭐⭐ | 태양광+EV 기반 친환경 점수 |
-| MC-04 | 멀티/복합 | ⭐⭐⭐ | 전력 급증 지역 신재생에너지 설치 현황 |
-| N-01 | 신규/단순 | ⭐ | 2024년 시도별 산업용 판매 수익 TOP 10 |
-| N-02 | 신규/단순 | ⭐ | 2024년 시간대별 전국 평균 전력수요 패턴 |
-| N-03 | 신규/복합 | ⭐⭐ | 여름·겨울 시간대별 전력수요 비교 |
-| N-04 | 신규/단순 | ⭐ | 2024년 상계거래 설치 건수 많은 동 TOP 10 |
-| N-05 | 신규/멀티 | ⭐⭐ | 2024년 시도별 상계거래 잉여율 |
-| N-06 | 신규/단순 | ⭐ | PPA 에너지원별 연도별 누적 용량 |
-| N-07 | 신규/단순 | ⭐ | 태양광 PPA 용량 많은 시군구 TOP 10 |
-| N-08 | 신규/단순 | ⭐ | 주택용 전기요금 조정 이력 |
-| N-09 | 신규/단순 | ⭐ | 제조업 전력사용량 높은 읍면동 TOP 10 |
-| N-10 | 신규/복합 | ⭐⭐ | 수용률 여름·겨울 차이가 큰 업종 |
-| N-11 | 신규/멀티 | ⭐⭐ | 초급속(100kW+) 충전기 설치 충전소 목록 |
-| N-12 | 신규/복합 | ⭐⭐ | 2024년 시도별 주택용 고객 1인당 전력사용량 |
-| N-13 | 신규/멀티 | ⭐⭐⭐ | PPA 집중 지역 vs 상계거래 지역 비교 |
-| N-14 | 신규/복합 | ⭐⭐ | 2024년 피크 시간대(11시) 경기도 전력수요 |
+| metro | city | mfg_cnt | e_bill | paper_bill |
+|---|---|---|---|---|
+| 경기도 | 화성시 | 272694 | 2137097 | 1575720 |
+| 경기도 | 김포시 | 146623 | 971923 | 748498 |
+| 경상남도 | 김해시 | 111118 | 1392662 | 1166526 |
+| 경기도 | 시흥시 | 109756 | 1111719 | 950626 |
+| 경기도 | 포천시 | 99649 | 787806 | 837917 |

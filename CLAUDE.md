@@ -80,7 +80,6 @@ data.go.kr (한전 파일데이터 305건)
 |--------|------|--------|
 | `contract_type` | 계약종별 전력사용 | year, month, metro_code, city_code, contract_type |
 | `industry_type` | 산업분류별 전력사용 | year, month, metro_code, city_code, biz_code |
-| `business_type` | 업종별 전력사용 | year, month, metro_code, city_code, biz_type_code |
 | `billing_type` | 청구서 유형별 발송 | year, month, metro_code, city_code, bill_type |
 | `welfare_discount` | 복지할인 현황 | year, month, metro_code, city_code, welfare_type |
 | `industry_cust_change` | 산업별 고객 증감 | year, month, metro_code, city_code, biz_code |
@@ -109,8 +108,8 @@ data.go.kr (한전 파일데이터 305건)
 | `net_metering_surplus` | 상계거래 잉여전력량 | net_metering_usage와 같은 키로 JOIN |
 | `tariff_adjustment` | 전기요금 조정율 | 1982년~현재 이력, 값은 % 변동폭 |
 
-**집계 테이블 6개** (aggregate_data.py, `agg_` 접두사):
-전국 합계 사전 집계본. `agg_contract_type_monthly`, `agg_business_type_monthly`, `agg_industry_type_monthly`, `agg_billing_type_monthly`, `agg_renew_energy_yearly`, `agg_welfare_discount_monthly`.
+**집계 테이블 5개** (aggregate_data.py, `agg_` 접두사):
+전국 합계 사전 집계본. `agg_contract_type_monthly`, `agg_industry_type_monthly`, `agg_billing_type_monthly`, `agg_renew_energy_yearly`, `agg_welfare_discount_monthly`.
 
 ### 공통 코드 매핑
 
@@ -119,7 +118,6 @@ data.go.kr (한전 파일데이터 305건)
 - `cityCd`: 개성시=100 (황해북도 소속)
 - `cntrCd`: 100=주택용, 200=일반용, 300=교육용, 400=산업용, 500=농사용, 600=가로등
 - `bizCd`: A=농업·임업·어업, B=광업, C=제조업, D=전기·가스·수도, E=하수·환경, F=건설업, G=도소매, H=운수, I=숙박음식, J=정보통신, K=금융보험, L=부동산, M=전문과학기술, N=사업시설관리, O=공공행정, P=교육, Q=보건복지, R=예술·스포츠, S=협회·단체, T=가구내고용, U=국제기관, KEPCO01=주택용 (KSIC 외 한전 자체 분류)
-- `bizTypeCd`: 01~38 (한전 업종별 세분류, business_type 테이블 전용)
 
 ### SQL 주의사항
 
@@ -128,7 +126,7 @@ data.go.kr (한전 파일데이터 305건)
 - `dong_industry_power.biz_name_large`는 파이프(`|`)가 없는 단어 (e.g. `제조업`, `건설업`)로 등호 조건 사용
 - `ppa_by_region.region`은 줄임말 (`전북`, `전남`) vs `net_metering_usage.metro`는 전체명 (`전북특별자치도`) → LIKE로 매핑
 - 지역·업종 텍스트 조회 시 common_code JOIN 필요: `JOIN common_code m ON m.code_type='metroCd' AND m.code=t.metro_code`
-- `industry_type.biz_code` → `bizCd`, `business_type.biz_type_code` → `bizTypeCd`, `industry_cust_change.biz_code` → `bizCd`
+- `industry_type.biz_code` → `bizCd`, `industry_cust_change.biz_code` → `bizCd`
 - `강원도`/`강원특별자치도` 모두 metro_code='32'로 통합됨, `전라북도`/`전북특별자치도` 모두 metro_code='35'
 
 ---
