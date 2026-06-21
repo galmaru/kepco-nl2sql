@@ -3,10 +3,23 @@ from __future__ import annotations
 
 import json
 import re
+from decimal import Decimal as _Decimal
 from pathlib import Path
 from typing import Any
 
 from . import executor
+
+
+def _norm(v) -> object:
+    """수치 정규화: Decimal/float → float 소수점 2자리 반올림.
+    - Decimal 타입 처리 (psycopg2 NUMERIC 반환값)
+    - 소수점 자릿수 차이 허용 (202.77 ≈ 202.7679)
+    """
+    if v is None:
+        return 0
+    if isinstance(v, (float, _Decimal)):
+        return round(float(v), 2)
+    return v
 
 SCENARIOS_PATH = Path(__file__).resolve().parents[1] / "tests" / "nl2sql_scenarios.md"
 
@@ -70,10 +83,7 @@ def _normalize_rows(rows: list[dict]) -> list[tuple]:
     """결과 행을 순서 무관 비교용 집합으로 변환."""
     result = []
     for row in rows:
-        vals = tuple(
-            round(v, 6) if isinstance(v, float) else v
-            for v in row.values()
-        )
+        vals = tuple(_norm(v) for v in row.values())
         result.append(vals)
     return sorted(result, key=lambda x: [str(i) for i in x])
 
@@ -87,14 +97,8 @@ def _superset_match(gen_result: dict, gold_result: dict) -> bool:
     if len(gen_rows) != len(gold_rows):
         return False
 
-    def norm(v):
-        # NULL과 0을 동일 취급: COALESCE 미적용 여부를 오답으로 보지 않음
-        if v is None:
-            return 0
-        return round(v, 6) if isinstance(v, float) else v
-
     def to_set(row: dict) -> frozenset:
-        return frozenset(norm(v) for v in row.values())
+        return frozenset(_norm(v) for v in row.values())
 
     gold_sets = [to_set(r) for r in gold_rows]
     gen_sets  = [to_set(r) for r in gen_rows]
@@ -122,13 +126,8 @@ def _subset_match(gen_result: dict, gold_result: dict) -> bool:
     if len(gen_rows) != len(gold_rows):
         return False
 
-    def norm(v):
-        if v is None:
-            return 0
-        return round(v, 6) if isinstance(v, float) else v
-
     def to_set(row: dict) -> frozenset:
-        return frozenset(norm(v) for v in row.values())
+        return frozenset(_norm(v) for v in row.values())
 
     gold_sets = [to_set(r) for r in gold_rows]
     gen_sets  = [to_set(r) for r in gen_rows]
@@ -155,6 +154,23 @@ def _is_refusal(raw: str) -> bool:
     return not has_sql_block and not has_select
 
 
+def _drop_null_rows(result: dict) -> dict:
+    """gen 결과에서 NULL 값이 포함된 행 제거 (LEFT JOIN 미매칭 행 처리)."""
+    clean = [row for row in result.get("rows", []) if not any(v is None for v in row.values())]
+    return {**result, "rows": clean, "row_count": len(clean)}
+
+
+def _match(gen: dict, gold: dict) -> bool:
+    """gen과 gold 결과 일치 여부 — 정규화 비교 + superset/subset 허용."""
+    if _normalize_rows(gen["rows"]) == _normalize_rows(gold["rows"]):
+        return True
+    if _superset_match(gen, gold):
+        return True
+    if _subset_match(gen, gold):
+        return True
+    return False
+
+
 def _classify_error(gen_result: dict, gold_result: dict) -> str:
     """오류 유형 분류."""
     if not gold_result["success"]:
@@ -168,27 +184,23 @@ def _classify_error(gen_result: dict, gold_result: dict) -> str:
                     return label
         return "실행 오류"
 
-    # 실행은 됐지만 결과 불일치
-    gen_rows = _normalize_rows(gen_result["rows"])
+    # 1차: NULL 포함 행 제거 후 비교 (IJ-02 케이스: LEFT JOIN 미매칭 행 제거)
+    gen_dropped = _drop_null_rows(gen_result)
+    if _match(gen_dropped, gold_result):
+        return "정답"
+
+    # 2차: NULL 유지 — _norm(None)=0 으로 gold의 COALESCE(0)과 매칭 (IJ-01 케이스)
+    if _match(gen_result, gold_result):
+        return "정답"
+
+    # 오류 유형 분류 (dropped 기준)
+    gen_rows = _normalize_rows(gen_dropped["rows"])
     gold_rows = _normalize_rows(gold_result["rows"])
 
-    if gen_rows == gold_rows:
-        return "정답"
-
-    # 컬럼이 더 많아도 gold 값을 모두 포함하면 정답 허용
-    if _superset_match(gen_result, gold_result):
-        return "정답"
-
-    # gen이 핵심 수치만 반환하고 gold가 중간 계산값 추가 포함해도 정답 허용
-    if _subset_match(gen_result, gold_result):
-        return "정답"
-
-    # 컬럼 수 비교
     if gen_result["columns"] and gold_result["columns"]:
         if len(gen_result["columns"]) != len(gold_result["columns"]):
             return "컬럼 불일치"
 
-    # 행 수 비교
     if len(gen_rows) == 0 and len(gold_rows) > 0:
         return "결과 없음"
 
@@ -206,8 +218,9 @@ def evaluate_one(scenario: dict, pipeline_fn) -> dict[str, Any]:
     gen_result    = pipeline_out.get("execution", {"success": False, "rows": [], "error": pipeline_out.get("error")})
 
     if is_impossible:
-        # 거절 판정: raw에 SQL 없으면 거절로 판단
-        refused = _is_refusal(raw_response) or (not gen_sql)
+        # 거절 판정: 최종 SQL(자기검증 후) 또는 원본 raw가 거절이면 거절로 판단.
+        # _is_refusal(gen_sql)이 (not gen_sql)을 포함하며, 검증 단계가 거절로 전환한 경우도 잡는다.
+        refused = _is_refusal(gen_sql) or _is_refusal(raw_response)
         return {
             "id":            scenario["id"],
             "question":      scenario["question"],

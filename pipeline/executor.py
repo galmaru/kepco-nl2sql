@@ -1,13 +1,12 @@
-"""[3-5] 읽기 전용 SQLite 실행기."""
+"""[3-5] 읽기 전용 PostgreSQL 실행기."""
 from __future__ import annotations
 
 import re
-import sqlite3
 import threading
-from pathlib import Path
 from typing import Any
 
-DB_PATH = Path(__file__).resolve().parents[1] / "data" / "kepco.db"
+from .db import connect
+
 MAX_ROWS = 100
 TIMEOUT_SEC = 5
 
@@ -26,7 +25,6 @@ def execute(sql: str) -> dict[str, Any]:
             "truncated": bool,
         }
     """
-    # 이미 LIMIT 없으면 추가
     if not re.search(r'\bLIMIT\b', sql, re.IGNORECASE):
         sql = sql.rstrip('; \n') + f' LIMIT {MAX_ROWS}'
 
@@ -41,16 +39,16 @@ def execute(sql: str) -> dict[str, Any]:
 
     def _run() -> None:
         try:
-            conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(sql)
-            rows = cursor.fetchall()
-            result["columns"] = list(rows[0].keys()) if rows else (
-                [d[0] for d in cursor.description] if cursor.description else []
-            )
-            result["rows"] = [dict(r) for r in rows]
-            result["row_count"] = len(rows)
-            result["truncated"] = len(rows) == MAX_ROWS
+            conn = connect(readonly=True)
+            cursor = conn.cursor()
+            cursor.execute(f"SET statement_timeout = {TIMEOUT_SEC * 1000}")
+            cursor.execute(sql)
+            rows_raw = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description] if cursor.description else []
+            result["columns"] = columns
+            result["rows"] = [dict(zip(columns, row)) for row in rows_raw]
+            result["row_count"] = len(rows_raw)
+            result["truncated"] = len(rows_raw) == MAX_ROWS
             result["success"] = True
             conn.close()
         except Exception as e:

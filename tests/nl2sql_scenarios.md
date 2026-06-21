@@ -46,7 +46,7 @@ SELECT b.code_name AS biz,
 FROM industry_type t
 JOIN common_code b ON b.code_type = 'bizCd' AND b.code = t.biz_code
 WHERE t.year = '2024'
-GROUP BY t.biz_code
+GROUP BY t.biz_code, b.code_name
 ORDER BY total_usage DESC
 LIMIT 5;
 ```
@@ -74,7 +74,7 @@ FROM industry_type t
 JOIN common_code m ON m.code_type = 'metroCd' AND m.code = t.metro_code
 WHERE t.year = '2024'
   AND t.biz_code = (SELECT code FROM common_code WHERE code_type = 'bizCd' AND code_name = '건설업')
-GROUP BY t.metro_code
+GROUP BY t.metro_code, m.code_name
 ORDER BY total_usage DESC
 LIMIT 3;
 ```
@@ -95,28 +95,26 @@ LIMIT 3;
 ```
 ```sql
 SELECT
-  SUM(CASE WHEN year = '2023' THEN power_usage END) AS usage_2023,
-  SUM(CASE WHEN year = '2024' THEN power_usage END) AS usage_2024,
   ROUND(
-    (SUM(CASE WHEN year = '2024' THEN power_usage END)
+    ((SUM(CASE WHEN year = '2024' THEN power_usage END)
      - SUM(CASE WHEN year = '2023' THEN power_usage END))
-    * 100.0 / SUM(CASE WHEN year = '2023' THEN power_usage END),
+    * 100.0 / SUM(CASE WHEN year = '2023' THEN power_usage END))::numeric,
     6
   ) AS yoy_pct
 FROM industry_type
 WHERE biz_code = (SELECT code FROM common_code WHERE code_type = 'bizCd' AND code_name = '제조업')
   AND year IN ('2023', '2024');
 ```
-| usage_2023 | usage_2024 | yoy_pct |
-|---|---|---|
-| 260881303843.0 | 256532402896.0 | -1.67 |
+| yoy_pct |
+|---------|
+| -1.67 |
 
 ---
 
 ### I-05. 특정 산업 계절별 전력사용량 비교 [TIME]
 
 ```
-자연어: 2024년 전국 숙박 및 음식점업의 계절별(봄/여름/가을/겨울) 전력사용량 비교
+자연어: 2024년 전국 숙박 및 음식점업의 계절별 전력사용량 비교
 평가 포인트: 월 → 계절 CASE WHEN 로직, common_code 서브쿼리로 biz_code 조회
 테이블: industry_type, common_code
 ```
@@ -153,11 +151,11 @@ ORDER BY total_usage DESC;
 ```
 ```sql
 SELECT b.code_name AS biz,
-       ROUND(SUM(t.bill) / NULLIF(SUM(t.power_usage), 0), 2) AS avg_unit_cost
+       ROUND((SUM(t.bill) / NULLIF(SUM(t.power_usage), 0))::numeric, 2) AS avg_unit_cost
 FROM industry_type t
 JOIN common_code b ON b.code_type = 'bizCd' AND b.code = t.biz_code
 WHERE t.year = '2024'
-GROUP BY t.biz_code
+GROUP BY t.biz_code, b.code_name
 ORDER BY avg_unit_cost DESC
 LIMIT 5;
 ```
@@ -180,22 +178,21 @@ LIMIT 5;
 ```
 ```sql
 SELECT b.code_name AS biz,
-       SUM(t.power_usage) AS usage,
-       ROUND(SUM(t.power_usage) * 100.0 / SUM(SUM(t.power_usage)) OVER (), 2) AS share_pct
+       ROUND((SUM(t.power_usage) * 100.0 / SUM(SUM(t.power_usage)) OVER ())::numeric, 2) AS share_pct
 FROM industry_type t
 JOIN common_code b ON b.code_type = 'bizCd' AND b.code = t.biz_code
 WHERE t.year = '2024'
   AND t.metro_code = (SELECT code FROM common_code WHERE code_type = 'metroCd' AND code_name = '서울특별시')
-GROUP BY t.biz_code
-ORDER BY usage DESC;
+GROUP BY t.biz_code, b.code_name
+ORDER BY share_pct DESC;
 ```
-| biz | usage | share_pct |
-|---|---|---|
-| 부동산업 | 13078656390.0 | 38.37 |
-| 도매 및 소매업 | 3462580525.0 | 10.16 |
-| 숙박 및 음식점업 | 2414902189.0 | 7.09 |
-| 운수 및 창고업 | 2231346030.0 | 6.55 |
-| 정보통신업 | 2162274507.0 | 6.34 |
+| biz | share_pct |
+|-----|-----------|
+| 부동산업 | 38.37 |
+| 도매 및 소매업 | 10.16 |
+| 숙박 및 음식점업 | 7.09 |
+| 운수 및 창고업 | 6.55 |
+| 정보통신업 | 6.34 |
 
 ---
 
@@ -270,7 +267,7 @@ LIMIT 5;
 
 ```
 자연어: 2024년 광역시도별로 제조업 전력사용량이 가구당 평균 전력사용량의 몇 배인지 계산해줘
-평가 포인트: house_avg.power_usage는 이미 가구당 평균(kWh) → AVG() 사용, NULLIF 이중 적용
+평가 포인트: 가구당 평균 = 총전력사용량/총가구수 (가구 수 가중평균), NULLIF 적용
 테이블: industry_type, house_avg, common_code
 ```
 ```sql
@@ -282,27 +279,26 @@ WITH ind AS (
   GROUP BY metro_code
 ),
 house AS (
-  SELECT metro_code, AVG(power_usage) AS avg_per_house
+  SELECT metro_code,
+         SUM(power_usage * house_count) / NULLIF(SUM(house_count), 0) AS avg_per_house
   FROM house_avg
   WHERE year = '2024'
   GROUP BY metro_code
 )
 SELECT m.code_name AS metro,
-       i.ind_usage,
-       ROUND(h.avg_per_house, 2) AS avg_house_usage,
-       ROUND(i.ind_usage / NULLIF(h.avg_per_house, 0), 1) AS ratio
+       ROUND((i.ind_usage / NULLIF(h.avg_per_house, 0))::numeric, 2) AS ratio
 FROM ind i
 JOIN house h ON i.metro_code = h.metro_code
 JOIN common_code m ON m.code_type = 'metroCd' AND m.code = i.metro_code
 ORDER BY ratio DESC;
 ```
-| metro | ind_usage | avg_house_usage | ratio |
-|---|---|---|---|
-| 경기도 | 68684716267.0 | 262.46 | 261700679.5 |
-| 울산광역시 | 25742969854.0 | 254.1 | 101311651.6 |
-| 부산광역시 | 6708004876.0 | 241.55 | 27770967.5 |
-| 세종특별자치시 | 1872035526.0 | 294.69 | 6352630.6 |
-| 서울특별시 | 1349813098.0 | 245.42 | 5500023.8 |
+| metro | ratio |
+|---|---|
+| 경기도 | 254691615.39 |
+| 울산광역시 | 101640402.65 |
+| 부산광역시 | 26918528.39 |
+| 세종특별자치시 | 6349836.18 |
+| 서울특별시 | 5480852.48 |
 
 ---
 
@@ -331,7 +327,7 @@ re AS (
 SELECT m.code_name AS metro,
        ct.total_contract_kw,
        re.renew_cap_kw,
-       ROUND(re.renew_cap_kw * 100.0 / NULLIF(ct.total_contract_kw, 0), 2) AS renew_ratio_pct
+       ROUND((re.renew_cap_kw * 100.0 / NULLIF(ct.total_contract_kw, 0))::numeric, 2) AS renew_ratio_pct
 FROM ct
 LEFT JOIN re ON ct.metro_code = re.metro_code
 JOIN common_code m ON m.code_type = 'metroCd' AND m.code = ct.metro_code

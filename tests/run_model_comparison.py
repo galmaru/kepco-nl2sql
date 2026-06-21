@@ -36,10 +36,10 @@ SMOKE_SCENARIO_ID = "I-01"
 OUT_PATH = Path(__file__).resolve().parent / "comparison_results.json"
 
 
-def make_pipeline_fn(model: str, semantic: str = "full"):
+def make_pipeline_fn(model: str, semantic: str = "full", verify: bool = False):
     """특정 모델·시맨틱 레벨로 고정된 pipeline_fn 반환."""
     def fn(scenario: dict) -> dict:
-        return pipeline.run_scenario(scenario, model=model, semantic=semantic)
+        return pipeline.run_scenario(scenario, model=model, semantic=semantic, verify=verify)
     return fn
 
 
@@ -66,17 +66,18 @@ def run_smoke(models: list[str], semantic: str = "full") -> None:
             print(f"  결과 행 수: {len(rows)}")
 
 
-def run_comparison(models: list[str], semantic: str = "full") -> dict:
+def run_comparison(models: list[str], semantic: str = "full", verify: bool = False) -> dict:
     """전체 평가 후 비교 결과 반환."""
     all_summaries: dict[str, dict] = {}
 
+    suffix = "+verify" if verify else ""
     for model in models:
-        key = f"{model}[{semantic}]"
+        key = f"{model}[{semantic}{suffix}]"
         print(f"\n\n{'='*60}")
-        print(f"모델 평가: {model}  (semantic={semantic})")
+        print(f"모델 평가: {model}  (semantic={semantic}, verify={verify})")
         print('='*60)
 
-        summary = evaluator.evaluate_all(make_pipeline_fn(model, semantic=semantic))
+        summary = evaluator.evaluate_all(make_pipeline_fn(model, semantic=semantic, verify=verify))
         evaluator.print_summary(summary, model=key)
         all_summaries[key] = summary
 
@@ -99,13 +100,13 @@ def print_comparison_table(summaries: dict) -> None:
     print("="*72)
 
 
-def save_results(summaries: dict) -> None:
+def save_results(summaries: dict, out_path: Path = OUT_PATH) -> None:
     """결과를 JSON으로 저장. 기존 파일에 모델별로 병합(append)."""
     # 기존 결과 로드
     existing: dict = {}
-    if OUT_PATH.exists():
+    if out_path.exists():
         try:
-            existing = json.loads(OUT_PATH.read_text(encoding="utf-8"))
+            existing = json.loads(out_path.read_text(encoding="utf-8"))
         except Exception:
             existing = {}
 
@@ -130,8 +131,8 @@ def save_results(summaries: dict) -> None:
         ]
         existing[model] = entry
 
-    OUT_PATH.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"\n결과 저장: {OUT_PATH}")
+    out_path.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"\n결과 저장: {out_path}")
 
 
 def main() -> None:
@@ -141,6 +142,10 @@ def main() -> None:
     parser.add_argument("--semantic", nargs="+", default=["full"],
                         choices=["none", "examples", "full"],
                         help="시맨틱 레이어 수준 (복수 지정 가능)")
+    parser.add_argument("--out", type=Path, default=OUT_PATH,
+                        help="결과 저장 경로 (기본: comparison_results.json)")
+    parser.add_argument("--verify", action="store_true",
+                        help="SQL 생성 후 LLM 자기검증 단계 적용")
     args = parser.parse_args()
 
     if args.smoke:
@@ -150,11 +155,11 @@ def main() -> None:
 
     all_summaries: dict[str, dict] = {}
     for sem in args.semantic:
-        summaries = run_comparison(args.models, semantic=sem)
+        summaries = run_comparison(args.models, semantic=sem, verify=args.verify)
         all_summaries.update(summaries)
 
     print_comparison_table(all_summaries)
-    save_results(all_summaries)
+    save_results(all_summaries, out_path=args.out)
 
 
 if __name__ == "__main__":

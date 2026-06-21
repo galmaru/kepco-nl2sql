@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 import re
-import sqlite3
-from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parents[1] / "data" / "kepco.db"
+from .db import connect
 
 _FORBIDDEN = re.compile(
     r'\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|ATTACH|DETACH|VACUUM|REINDEX|ANALYZE)\b',
@@ -19,10 +17,15 @@ _ALLOWED_FIRST = {"SELECT", "WITH", "EXPLAIN"}
 
 
 def _allowed_tables() -> set[str]:
-    conn = sqlite3.connect(DB_PATH)
-    rows = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+    """)
+    tables = {row[0] for row in cursor.fetchall()}
     conn.close()
-    return {r[0] for r in rows}
+    return tables
 
 
 def check(sql: str) -> tuple[bool, str]:
@@ -30,7 +33,6 @@ def check(sql: str) -> tuple[bool, str]:
     Returns:
         (ok, reason) — ok=True이면 실행 허용
     """
-    # 주석 제거
     cleaned = re.sub(r'--[^\n]*', ' ', sql)
     cleaned = re.sub(r'/\*.*?\*/', ' ', cleaned, flags=re.DOTALL)
     stripped = cleaned.strip()
@@ -49,10 +51,8 @@ def check(sql: str) -> tuple[bool, str]:
     if _WRITE_PRAGMA.search(cleaned):
         return False, "쓰기 PRAGMA 금지"
 
-    # 테이블명 검사 (FROM/JOIN 뒤에 오는 단어)
     referenced = set(re.findall(r'(?:FROM|JOIN)\s+(\w+)', cleaned, re.IGNORECASE))
     allowed = _allowed_tables()
-    # CTE 및 서브쿼리 별칭은 허용 (WITH name AS (...) 또는 (...) AS name)
     cte_aliases = set(re.findall(r'\b(\w+)\s+AS\s*\(', cleaned, re.IGNORECASE))
     unknown = referenced - allowed - {"common_code"} - cte_aliases
     if unknown:
